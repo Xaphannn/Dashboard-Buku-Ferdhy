@@ -259,12 +259,10 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
 
 <!-- LIBRARY TABS -->
 <div class="lib-tabs">
-  <button class="lib-tab active" id="tabEveryman" onclick="switchLib('everyman')">
-    Everyman's Library <span class="tab-count" id="countEveryman">0</span>
-  </button>
-  <button class="lib-tab tab-non" id="tabNon" onclick="switchLib('non-everyman')">
-    Non-Everyman Library <span class="tab-count" id="countNon">0</span>
-  </button>
+  <button class="lib-tab active" id="tabAll" onclick="switchLib('all')">ALL <span class="tab-count" id="countAll">0</span></button>
+  <button class="lib-tab" id="tabEveryman" onclick="switchLib('everyman')">Everyman <span class="tab-count" id="countEveryman">0</span></button>
+  <button class="lib-tab" id="tabNon" onclick="switchLib('non-everyman')">Non-Everyman <span class="tab-count" id="countNon">0</span></button>
+  <button class="lib-tab" id="tabBought" onclick="switchLib('bought')" style="color:var(--green-lt)">Selesai Dibeli <span class="tab-count" id="countBought">0</span></button>
 </div>
 
 <!-- STATS -->
@@ -668,38 +666,77 @@ function renderTopPriority(){
 }
 
 // ── TABLE ──
-function renderTable(){
-  const filtered=getFiltered();
-  const total=filtered.length, pages=Math.max(1,Math.ceil(total/perPage));
-  if(currentPage>pages)currentPage=1;
-  const slice=filtered.slice((currentPage-1)*perPage,currentPage*perPage);
-  const isBlue=currentLib==='non-everyman';
-  $('bookTableBody').innerHTML=slice.map((b,i)=>`
-    <tr onclick="openEditPanel(${b.id})" style="animation-delay:${i*.016}s;animation:fadeIn .3s ease both">
-      <td class="cover-cell">
-        ${b.photo?`<img class="cover-thumb" src="${b.photo}" alt="">`:`<div class="cover-placeholder">📖</div>`}
-      </td>
-      <td class="book-num">${b.no}</td>
-      <td class="priority-num ${b.priority<=5?'top':''}">${b.priority}</td>
-      <td class="book-title-cell">
-        <div class="book-title-main">${b.title}</div>
-        <div class="book-author">${b.author}</div>
-      </td>
-      <td><span class="genre-tag${isBlue?' blue':''}">${b.genre.split('/')[0].trim()}</span></td>
-      <td><span class="status-badge ${b.bought?'bought':'not-bought'}"><span class="status-dot"></span>${b.bought?'Dibeli':'Belum'}</span></td>
-      <td class="price-cell">${fmt(b.price)}</td>
-    </tr>`).join('');
-  $('pageInfo').textContent=`${total} buku`;
-  const nums=$('pageNums'); nums.innerHTML='';
-  for(let p=1;p<=pages;p++){
-    const btn=document.createElement('button');
-    btn.className='page-btn'+(p===currentPage?' active':'');
-    btn.textContent=p;
-    btn.onclick=()=>{currentPage=p;renderTable()};
-    nums.appendChild(btn);
-  }
-}
+function renderTable() {
+  const tbody = document.getElementById('bookTableBody');
+  tbody.innerHTML = '';
 
+  // 1. LOGIKA FILTER BARU (Mendukung Tab ALL dan SUDAH DIBELI)
+  let filtered = [...books]; // Copy data asli agar tidak merusak urutan utama
+  
+  if (currentLib === 'everyman') {
+    filtered = books.filter(b => b.library === 'everyman' && !b.bought);
+  } else if (currentLib === 'non-everyman') {
+    filtered = books.filter(b => b.library === 'non-everyman' && !b.bought);
+  } else if (currentLib === 'bought') {
+    filtered = books.filter(b => b.bought === true);
+  }
+  // Jika 'all', maka filtered tetap berisi semua buku
+
+  // 2. LOGIKA SORTING BARU (Prioritas 1 akan selalu di paling atas)
+  filtered.sort((a, b) => (a.priority || 999) - (b.priority || 999));
+
+  // 3. TAMPILKAN KE TABEL
+  filtered.forEach(book => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="cover-cell">
+        ${book.photo ? `<img src="${book.photo}" class="cover-thumb">` : `<div class="cover-placeholder">📖</div>`}
+      </td>
+      <td class="book-num">#${book.no}</td>
+      <td class="priority-num ${book.priority <= 3 ? 'top' : ''}">${book.priority || '-'}</td>
+      <td class="book-title-cell">
+        <div class="book-title-main">${book.title}</div>
+        <div class="book-author">${book.author}</div>
+      </td>
+      <td><span class="genre-tag ${book.library !== 'everyman' ? 'blue' : ''}">${book.genre || '-'}</span></td>
+      <td>
+        <span class="status-badge ${book.bought ? 'bought' : 'not-bought'}">
+          <span class="status-dot"></span>${book.bought ? 'DIBELI' : 'WISHLIST'}
+        </span>
+        ${book.bought ? `<div style="font-size:10px; color:var(--txt-dim); margin-top:2px">${book.readStatus || 'Belum Dibaca'}</div>` : ''}
+      </td>
+      <td class="price-cell">
+        ${book.bought ? `<span style="color:var(--gold-mut)">${book.condition || 'Segel'}</span>` : `Rp ${(book.price || 0).toLocaleString()}`}
+      </td>
+    `;
+    tr.onclick = () => openDetail(book.id);
+    tbody.appendChild(tr);
+  });
+  
+  // Jangan lupa panggil update angka di tab
+  if (typeof updateStats === 'function') updateStats();
+}
+function buyBook(id) {
+  const bookIndex = books.findIndex(b => b.id === id);
+  if (bookIndex === -1) return;
+
+  const targetBook = books[bookIndex];
+  const oldPriority = targetBook.priority;
+
+  // 1. Ubah status jadi terbeli
+  targetBook.bought = true;
+  targetBook.condition = "Segel"; // Default
+  targetBook.readStatus = "Belum Dibaca"; // Default
+
+  // 2. GESER PRIORITAS (Buku lain naik tingkat)
+  books.forEach(b => {
+    if (!b.bought && b.priority > oldPriority) {
+      b.priority -= 1; // Prioritas 6 jadi 5, 7 jadi 6, dst
+    }
+  });
+
+  renderTable(); // Update tampilan
+}
 function setFilter(f,el){
   currentFilter=f;currentPage=1;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));

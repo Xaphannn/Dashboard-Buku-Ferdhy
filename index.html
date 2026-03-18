@@ -675,7 +675,7 @@ function renderTable(){
   const slice=filtered.slice((currentPage-1)*perPage,currentPage*perPage);
   const isBlue=currentLib==='non-everyman';
   $('bookTableBody').innerHTML=slice.map((b,i)=>`
-    <tr onclick="openDetail(${b.id})" style="animation-delay:${i*.016}s;animation:fadeIn .3s ease both">
+    <tr onclick="openEditPanel(${b.id})" style="animation-delay:${i*.016}s;animation:fadeIn .3s ease both">
       <td class="cover-cell">
         ${b.photo?`<img class="cover-thumb" src="${b.photo}" alt="">`:`<div class="cover-placeholder">📖</div>`}
       </td>
@@ -770,10 +770,22 @@ function closeEditPanel(){
 }
 function switchEpTab(tab){
   epCurrentTab=tab;
+
   $('epTabAdd').classList.toggle('active',tab==='add');
   $('epTabEdit').classList.toggle('active',tab==='edit');
+
   $('epAddPanel').style.display=tab==='add'?'block':'none';
   $('epEditPanel').style.display=tab==='edit'?'block':'none';
+
+  // 🔥 FIX: AUTO LOAD EDIT
+  if(tab === 'edit'){
+    if(editingId){
+      loadEditForm(editingId);
+    } else {
+      $('editNoSelection').style.display='block';
+      $('editFormWrap').style.display='none';
+    }
+  }
 }
 
 function loadEditForm(id){
@@ -898,9 +910,22 @@ function confirmDelete(){
 }
 function closeConfirm(){$('confirmOverlay').classList.remove('open');deletingId=null}
 function deleteBook(){
-  const b=books.find(x=>x.id===deletingId);
-  books=books.filter(x=>x.id!==deletingId);
-  saveData(); renderAll(); closeConfirm(); closeEditPanel();
+  const b = books.find(x=>x.id===deletingId);
+
+  books = books.filter(x=>x.id!==deletingId);
+
+  // 🔥 RAPATKAN NOMOR DALAM LIBRARY
+  const libBooks = books
+    .filter(x => x.library === b.library)
+    .sort((a,b)=>a.no - b.no);
+
+  libBooks.forEach((book, i) => book.no = i + 1);
+
+  saveData();
+  renderAll();
+  closeConfirm();
+  closeEditPanel();
+
   showToast(`"${b.title}" dihapus dari koleksi`);
 }
 

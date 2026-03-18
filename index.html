@@ -354,6 +354,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
       <button class="btn btn-green" id="dToggleBought" onclick="toggleBoughtFromModal()"></button>
       <button class="btn btn-gold" onclick="openEditFromModal()">Edit ✦</button>
       <a class="btn btn-link" id="dLink" href="#" target="_blank">Toko ↗</a>
+      <button class="btn btn-danger" onclick="confirmDeleteFromModal()">🗑 Hapus</button>
     </div>
   </div>
 </div>
@@ -675,7 +676,7 @@ function renderTable(){
   const slice=filtered.slice((currentPage-1)*perPage,currentPage*perPage);
   const isBlue=currentLib==='non-everyman';
   $('bookTableBody').innerHTML=slice.map((b,i)=>`
-    <tr onclick="openDetail(${b.id})" style="animation-delay:${i*.016}s;animation:fadeIn .3s ease both">
+    <tr onclick="openEditPanel(${b.id})" style="animation-delay:${i*.016}s;animation:fadeIn .3s ease both">
       <td class="cover-cell">
         ${b.photo?`<img class="cover-thumb" src="${b.photo}" alt="">`:`<div class="cover-placeholder">📖</div>`}
       </td>
@@ -770,10 +771,20 @@ function closeEditPanel(){
 }
 function switchEpTab(tab){
   epCurrentTab=tab;
+
   $('epTabAdd').classList.toggle('active',tab==='add');
   $('epTabEdit').classList.toggle('active',tab==='edit');
+
   $('epAddPanel').style.display=tab==='add'?'block':'none';
   $('epEditPanel').style.display=tab==='edit'?'block':'none';
+
+  // 🔥 HANDLE EDIT STATE
+  if(tab === 'edit'){
+    if(editingId){
+      loadEditForm(editingId);
+    } else {
+      $('editNoSelection').style.display='block';
+      $('editFormWrap').style.display='none';
 }
 
 function loadEditForm(id){
@@ -890,6 +901,16 @@ function saveEdit(){
 }
 
 // ── DELETE ──
+    function confirmDeleteFromModal(){
+  if(modalOpenId === null) return;
+  deletingId = modalOpenId;
+
+  const b = books.find(x => x.id === deletingId);
+  $('confirmMsg').textContent = `"${b.title}" akan dihapus dari wishlist.`;
+
+  closeDetail();
+  $('confirmOverlay').classList.add('open');
+}
 function confirmDelete(){
   if(!editingId)return;
   const b=books.find(x=>x.id===editingId); deletingId=editingId;
@@ -900,6 +921,10 @@ function closeConfirm(){$('confirmOverlay').classList.remove('open');deletingId=
 function deleteBook(){
   const b=books.find(x=>x.id===deletingId);
   books=books.filter(x=>x.id!==deletingId);
+    const libBooks = books
+    .filter(x => x.library === b.library)
+    .sort((a,b)=>a.no - b.no);
+  libBooks.forEach((book, i) => book.no = i + 1);
   saveData(); renderAll(); closeConfirm(); closeEditPanel();
   showToast(`"${b.title}" dihapus dari koleksi`);
 }

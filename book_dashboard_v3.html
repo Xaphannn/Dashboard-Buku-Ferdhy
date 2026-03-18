@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Library — Koleksi Buku</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep:    #0e0a06; --bg-card:   #1a120a; --bg-card2:  #221810;
+  --bg-border:  #3a2a18; --gold:      #d4a847; --gold-mut:  #9a7830;
+  --gold-pale:  #f0dca0; --cream:     #e8d5b0; --brown-lt:  #c49a60;
+  --txt-muted:  #9a8060; --txt-dim:   #5a4030; --green-dk:  #1a2e18;
+  --green-lt:   #7ab86a; --blue-dk:   #0e1a2e; --blue-lt:   #6a9ab8;
+  --blue-mid:   #2a4a6e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-deep);color:var(--cream);font-family:'EB Garamond',serif;font-size:15px;line-height:1.6;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.6}
+
+/* ── HEADER ── */
+header{position:relative;padding:36px 48px 24px;border-bottom:1px solid var(--bg-border);display:flex;align-items:center;justify-content:space-between;overflow:hidden}
+header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;height:320px;background:radial-gradient(circle,rgba(212,168,71,.07) 0%,transparent 70%);pointer-events:none}
+.hd-ornament{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold-mut),var(--gold),var(--gold-mut),transparent)}
+.hd-left h1{font-family:'Cinzel',serif;font-size:24px;font-weight:600;color:var(--gold);letter-spacing:.12em;text-transform:uppercase}
+.hd-left p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:var(--txt-muted);letter-spacing:.06em;margin-top:3px}
+.hd-right{display:flex;gap:10px;align-items:center;position:relative;z-index:1}
+
+/* ── LIBRARY TABS ── */
+.lib-tabs{display:flex;gap:1px;background:var(--bg-border);border-bottom:1px solid var(--bg-border)}
+.lib-tab{flex:1;padding:14px 20px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--txt-muted);background:var(--bg-card2);cursor:pointer;transition:all .2s;text-align:center;border:none;position:relative}
+.lib-tab.active{background:var(--bg-card);color:var(--gold)}
+.lib-tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--gold)}
+.lib-tab .tab-count{display:inline-block;margin-left:8px;font-size:9px;background:rgba(212,168,71,.12);border:1px solid rgba(212,168,71,.2);color:var(--gold-mut);padding:1px 6px;border-radius:0}
+.lib-tab.active .tab-count{background:rgba(212,168,71,.2);color:var(--gold)}
+.lib-tab.tab-non .tab-count{background:rgba(106,154,184,.12);border-color:rgba(106,154,184,.2);color:var(--blue-lt)}
+.lib-tab.tab-non.active{color:var(--blue-lt)}
+.lib-tab.tab-non.active::after{background:var(--blue-lt)}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--bg-border);border-bottom:1px solid var(--bg-border)}
+.stat-card{background:var(--bg-card);padding:20px 24px;position:relative;overflow:hidden;transition:background .3s}
+.stat-card:hover{background:var(--bg-card2)}
+.stat-card::before{content:attr(data-roman);position:absolute;bottom:-8px;right:10px;font-family:'Cinzel',serif;font-size:52px;color:var(--gold);opacity:.04;pointer-events:none;line-height:1}
+.stat-label{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt-muted);margin-bottom:6px}
+.stat-value{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--gold);line-height:1}
+.stat-value.green{color:var(--green-lt)}
+.stat-value.blue{color:var(--blue-lt)}
+.stat-value.sm{font-size:22px;padding-top:6px;color:var(--cream)}
+.stat-sub{font-size:11px;color:var(--txt-dim);margin-top:4px;font-style:italic}
+
+/* ── MAIN ── */
+.main{display:grid;grid-template-columns:1fr 310px}
+.table-section{border-right:1px solid var(--bg-border);padding:24px 32px}
+.section-title{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-mut);margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--bg-border),transparent)}
+.section-title.blue{color:var(--blue-lt)}
+
+.filters{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.filter-btn{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--bg-border);background:transparent;color:var(--txt-muted);cursor:pointer;transition:all .2s}
+.filter-btn:hover,.filter-btn.active{border-color:var(--gold-mut);color:var(--gold);background:rgba(212,168,71,.06)}
+.filter-btn.blue-active{border-color:var(--blue-mid);color:var(--blue-lt);background:rgba(106,154,184,.06)}
+.search-box{margin-left:auto;display:flex;align-items:center;gap:6px;border:1px solid var(--bg-border);padding:5px 10px;background:rgba(0,0,0,.2)}
+.search-box input{background:transparent;border:none;outline:none;color:var(--cream);font-family:'EB Garamond',serif;font-size:13px;width:140px}
+.search-box input::placeholder{color:var(--txt-dim)}
+
+/* TABLE */
+.book-table{width:100%;border-collapse:collapse}
+.book-table thead th{font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--txt-dim);padding:7px 8px;text-align:left;border-bottom:1px solid var(--bg-border)}
+.book-table tbody tr{border-bottom:1px solid rgba(58,42,24,.4);cursor:pointer;transition:background .15s}
+.book-table tbody tr:hover{background:rgba(212,168,71,.04)}
+.book-table td{padding:8px 8px;font-size:13px;vertical-align:middle}
+
+/* Book cover thumbnail */
+.cover-thumb{width:34px;height:46px;object-fit:cover;border:1px solid var(--bg-border);flex-shrink:0}
+.cover-placeholder{width:34px;height:46px;background:var(--bg-card2);border:1px solid var(--bg-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:var(--txt-dim)}
+.cover-cell{width:42px}
+
+.book-num{font-family:'Cinzel',serif;font-size:9px;color:var(--txt-dim);width:24px}
+.book-title-cell{max-width:180px}
+.book-title-main{font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream);line-height:1.25}
+.book-author{font-size:11px;color:var(--txt-muted);font-style:italic;margin-top:1px}
+.genre-tag{display:inline-block;font-family:'Cinzel',serif;font-size:6.5px;letter-spacing:.07em;padding:2px 6px;background:rgba(138,94,42,.15);border:1px solid rgba(138,94,42,.3);color:var(--brown-lt);white-space:nowrap}
+.genre-tag.blue{background:rgba(42,74,110,.2);border-color:rgba(42,74,110,.4);color:var(--blue-lt)}
+.price-cell{font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--txt-muted);white-space:nowrap;text-align:right}
+.status-badge{display:inline-flex;align-items:center;gap:4px;font-family:'Cinzel',serif;font-size:7px;letter-spacing:.1em;padding:2px 8px}
+.status-badge.bought{background:rgba(74,122,58,.15);border:1px solid rgba(74,122,58,.4);color:#7ab86a}
+.status-badge.not-bought{background:rgba(90,58,26,.2);border:1px solid rgba(90,58,26,.4);color:var(--txt-dim)}
+.status-dot{width:4px;height:4px;border-radius:50%}
+.status-badge.bought .status-dot{background:#7ab86a}
+.status-badge.not-bought .status-dot{background:var(--txt-dim)}
+.priority-num{font-family:'Cinzel',serif;font-size:9px;color:var(--txt-muted);width:22px;text-align:center}
+.priority-num.top{color:var(--gold);font-size:11px}
+
+.pagination{display:flex;align-items:center;gap:6px;margin-top:14px;justify-content:flex-end}
+.page-btn{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.1em;padding:5px 10px;border:1px solid var(--bg-border);background:transparent;color:var(--txt-muted);cursor:pointer;transition:all .2s}
+.page-btn:hover,.page-btn.active{border-color:var(--gold-mut);color:var(--gold)}
+.page-info{font-size:11px;color:var(--txt-dim);font-style:italic}
+
+/* ── SIDEBAR ── */
+.sidebar{padding:24px 20px;background:rgba(0,0,0,.15);overflow-y:auto}
+.budget-ring-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:22px}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-pct{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--gold);line-height:1}
+.ring-label{font-family:'Cinzel',serif;font-size:7px;letter-spacing:.14em;color:var(--txt-muted);margin-top:3px}
+.budget-details{width:100%;margin-top:10px}
+.budget-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(58,42,24,.4)}
+.budget-row:last-child{border-bottom:none}
+.budget-key{font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.1em;color:var(--txt-muted)}
+.budget-val{font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--cream)}
+.budget-val.gold{color:var(--gold)}
+.budget-val.green{color:#7ab86a}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--bg-border),transparent);margin:18px -20px}
+.genre-bar-item{margin-bottom:9px}
+.genre-bar-header{display:flex;justify-content:space-between;margin-bottom:3px}
+.genre-bar-name{font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.07em;color:var(--txt-muted)}
+.genre-bar-count{font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--txt-dim)}
+.genre-bar-track{height:2px;background:var(--bg-border)}
+.genre-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold-mut),var(--gold))}
+.genre-bar-fill.blue{background:linear-gradient(90deg,var(--blue-mid),var(--blue-lt))}
+.priority-item{display:flex;gap:8px;padding:9px 0;border-bottom:1px solid rgba(58,42,24,.4);cursor:pointer;transition:all .15s;align-items:center}
+.priority-item:hover{padding-left:4px}
+.priority-num-sb{font-family:'Cinzel',serif;font-size:9px;color:var(--gold-mut);min-width:16px}
+.priority-thumb{width:28px;height:38px;object-fit:cover;border:1px solid var(--bg-border);flex-shrink:0}
+.priority-thumb-ph{width:28px;height:38px;background:var(--bg-card2);border:1px solid var(--bg-border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--txt-dim);flex-shrink:0}
+.priority-info{flex:1;min-width:0}
+.priority-title{font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--cream);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.priority-author-sb{font-size:10px;color:var(--txt-muted);font-style:italic}
+.priority-price{font-family:'Cormorant Garamond',serif;font-size:11px;color:var(--txt-dim);text-align:right;white-space:nowrap}
+
+/* ── DETAIL MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg-card);border:1px solid var(--bg-border);max-width:620px;width:92%;position:relative;animation:modalIn .2s ease;max-height:90vh;overflow-y:auto}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.modal-ornament{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold-mut),var(--gold),var(--gold-mut),transparent)}
+.modal-ornament.blue{background:linear-gradient(90deg,transparent,var(--blue-mid),var(--blue-lt),var(--blue-mid),transparent)}
+.modal-top{display:flex;gap:0}
+.modal-cover-area{width:140px;flex-shrink:0;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;min-height:180px;border-right:1px solid var(--bg-border);position:relative;overflow:hidden}
+.modal-cover-img{width:100%;height:100%;object-fit:cover}
+.modal-cover-ph{font-size:48px;color:var(--txt-dim)}
+.modal-header{padding:24px 28px 16px;flex:1;background:linear-gradient(135deg,rgba(212,168,71,.05),transparent)}
+.modal-badge{font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.18em;padding:2px 9px;border:1px solid;display:inline-block;margin-bottom:10px}
+.modal-badge.everyman{border-color:rgba(212,168,71,.4);color:var(--gold-mut);background:rgba(212,168,71,.06)}
+.modal-badge.non-everyman{border-color:rgba(106,154,184,.4);color:var(--blue-lt);background:rgba(106,154,184,.06)}
+.modal-num{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.18em;color:var(--txt-dim);margin-bottom:5px}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold-pale);line-height:1.2;margin-bottom:4px}
+.modal-author-nm{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--txt-muted)}
+.modal-body{padding:18px 28px;border-top:1px solid var(--bg-border)}
+.modal-blurb{font-family:'EB Garamond',serif;font-size:13px;color:var(--txt-muted);line-height:1.7;margin-bottom:14px;font-style:italic;border-left:2px solid var(--gold-mut);padding-left:12px}
+.modal-meta{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.meta-key{font-family:'Cinzel',serif;font-size:7px;letter-spacing:.14em;color:var(--txt-dim);margin-bottom:1px}
+.meta-val{font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--cream)}
+.modal-footer{padding:12px 28px 18px;display:flex;gap:7px;justify-content:flex-end;border-top:1px solid rgba(58,42,24,.3);flex-wrap:wrap}
+
+/* BUTTONS */
+.btn{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.13em;text-transform:uppercase;padding:8px 16px;border:1px solid;cursor:pointer;transition:all .2s}
+.btn-ghost{border-color:var(--bg-border);background:transparent;color:var(--txt-muted)}
+.btn-ghost:hover{border-color:var(--txt-dim);color:var(--cream)}
+.btn-gold{border-color:var(--gold-mut);background:rgba(212,168,71,.08);color:var(--gold)}
+.btn-gold:hover{background:rgba(212,168,71,.16)}
+.btn-green{border-color:rgba(74,122,58,.6);background:rgba(74,122,58,.1);color:#7ab86a}
+.btn-green:hover{background:rgba(74,122,58,.2)}
+.btn-blue{border-color:rgba(42,74,110,.8);background:rgba(42,74,110,.2);color:var(--blue-lt)}
+.btn-blue:hover{background:rgba(42,74,110,.35)}
+.btn-link{border-color:var(--gold-mut);background:rgba(212,168,71,.08);color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.btn-link:hover{background:rgba(212,168,71,.16)}
+.btn-danger{border-color:rgba(180,60,60,.5);background:rgba(180,60,60,.08);color:#c06060}
+.btn-danger:hover{background:rgba(180,60,60,.18)}
+.hd-btn{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:8px 16px;border:1px solid var(--gold-mut);background:rgba(212,168,71,.06);color:var(--gold);cursor:pointer;transition:all .2s}
+.hd-btn:hover,.hd-btn.active{background:rgba(212,168,71,.15);border-color:var(--gold)}
+
+/* ── EDIT PANEL ── */
+.edit-panel{display:none;position:fixed;right:0;top:0;bottom:0;width:430px;background:var(--bg-card);border-left:1px solid var(--bg-border);z-index:300;overflow-y:auto;transform:translateX(100%);transition:transform .3s ease;flex-direction:column}
+.edit-panel.open{display:flex;transform:translateX(0)}
+.ep-ornament{height:3px;background:linear-gradient(90deg,transparent,var(--gold-mut),var(--gold),var(--gold-mut),transparent);flex-shrink:0}
+.ep-header{padding:20px 26px 14px;border-bottom:1px solid var(--bg-border);flex-shrink:0;position:relative}
+.ep-header h2{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);letter-spacing:.12em}
+.ep-header p{font-size:12px;color:var(--txt-muted);font-style:italic;margin-top:3px}
+.ep-close{position:absolute;top:18px;right:22px;background:transparent;border:none;color:var(--txt-dim);cursor:pointer;font-size:18px;line-height:1}
+.ep-close:hover{color:var(--cream)}
+.ep-body{padding:22px 26px;flex:1;overflow-y:auto}
+.ep-tabs{display:flex;gap:1px;background:var(--bg-border);margin-bottom:22px}
+.ep-tab{flex:1;padding:9px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt-muted);background:var(--bg-card2);cursor:pointer;text-align:center;border:none;transition:all .2s}
+.ep-tab.active{background:var(--bg-card);color:var(--gold)}
+
+/* FORM */
+.form-group{margin-bottom:16px}
+.form-label{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:var(--gold-mut);display:block;margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--bg-card2);border:1px solid var(--bg-border);color:var(--cream);font-family:'EB Garamond',serif;font-size:14px;padding:8px 11px;outline:none;transition:border-color .2s;appearance:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold-mut)}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.5}
+.form-select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239a8060'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.form-select option{background:var(--bg-card2);color:var(--cream)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(58,42,24,.3)}
+.toggle-label{font-family:'EB Garamond',serif;font-size:14px;color:var(--cream)}
+.toggle-sub{font-size:11px;color:var(--txt-dim);font-style:italic;margin-top:1px}
+.toggle{position:relative;width:42px;height:22px;cursor:pointer;background:var(--bg-card2);border:1px solid var(--bg-border);border-radius:11px;transition:all .2s;flex-shrink:0}
+.toggle.on{background:var(--green-dk);border-color:rgba(74,122,58,.6)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--txt-dim);transition:all .2s}
+.toggle.on::after{left:23px;background:#7ab86a}
+.form-divider{height:1px;background:var(--bg-border);margin:18px 0}
+.fsec-title{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.14em;color:var(--gold-mut);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--bg-border)}
+
+/* PHOTO UPLOAD */
+.photo-upload-area{border:1px dashed var(--bg-border);padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:rgba(0,0,0,.2)}
+.photo-upload-area:hover{border-color:var(--gold-mut);background:rgba(212,168,71,.03)}
+.photo-upload-area.has-photo{border-style:solid;border-color:var(--gold-mut)}
+.photo-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.photo-preview{width:100%;max-height:180px;object-fit:contain;display:none;margin-bottom:10px}
+.photo-preview.show{display:block}
+.photo-upload-icon{font-size:28px;color:var(--txt-dim);margin-bottom:8px}
+.photo-upload-label{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.12em;color:var(--txt-muted)}
+.photo-upload-sub{font-size:11px;color:var(--txt-dim);margin-top:4px;font-style:italic}
+.photo-url-row{display:flex;gap:8px;margin-top:10px}
+.photo-url-row .form-input{flex:1}
+.photo-url-btn{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.1em;padding:8px 12px;border:1px solid var(--bg-border);background:transparent;color:var(--txt-muted);cursor:pointer;white-space:nowrap;transition:all .2s}
+.photo-url-btn:hover{border-color:var(--gold-mut);color:var(--gold)}
+.photo-clear-btn{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.1em;padding:5px 10px;border:1px solid rgba(180,60,60,.4);background:transparent;color:#c06060;cursor:pointer;margin-top:8px;transition:all .2s;width:100%}
+.photo-clear-btn:hover{background:rgba(180,60,60,.1)}
+
+.ep-footer{padding:14px 26px;border-top:1px solid var(--bg-border);display:flex;gap:7px;flex-shrink:0}
+.ep-footer .btn{flex:1;text-align:center;padding:10px}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--bg-card);border:1px solid var(--gold-mut);font-family:'Cinzel',serif;font-size:8.5px;letter-spacing:.12em;color:var(--gold);padding:11px 22px;z-index:999;transition:transform .3s ease;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:rgba(74,122,58,.6);color:#7ab86a}
+.toast.error{border-color:rgba(180,60,60,.5);color:#c06060}
+
+/* CONFIRM */
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;align-items:center;justify-content:center}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:var(--bg-card);border:1px solid var(--bg-border);padding:28px 32px;max-width:360px;width:90%;position:relative;animation:modalIn .15s ease}
+.confirm-box h3{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);margin-bottom:10px}
+.confirm-box p{font-size:13px;color:var(--txt-muted);margin-bottom:20px;font-style:italic}
+.confirm-actions{display:flex;gap:8px;justify-content:flex-end}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--bg-border)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="hd-ornament"></div>
+  <div class="hd-left">
+    <h1>My Library</h1>
+    <p>Arsip Koleksi Pribadi — Buku Pilihan</p>
+  </div>
+  <div class="hd-right">
+    <button class="hd-btn" id="editToggleBtn" onclick="toggleEditPanel()">✦ Kelola Koleksi</button>
+  </div>
+</header>
+
+<!-- LIBRARY TABS -->
+<div class="lib-tabs">
+  <button class="lib-tab active" id="tabEveryman" onclick="switchLib('everyman')">
+    Everyman's Library <span class="tab-count" id="countEveryman">0</span>
+  </button>
+  <button class="lib-tab tab-non" id="tabNon" onclick="switchLib('non-everyman')">
+    Non-Everyman Library <span class="tab-count" id="countNon">0</span>
+  </button>
+</div>
+
+<!-- STATS -->
+<div class="stats-row" id="statsRow"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="table-section">
+    <div class="section-title" id="sectionTitle">Daftar Koleksi</div>
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('all',this)">Semua</button>
+      <button class="filter-btn" onclick="setFilter('bought',this)">✓ Sudah Dibeli</button>
+      <button class="filter-btn" onclick="setFilter('not-bought',this)">Belum Dibeli</button>
+      <button class="filter-btn" onclick="setFilter('fiksi',this)">Fiksi</button>
+      <button class="filter-btn" onclick="setFilter('nonfiksi',this)">Non-Fiksi</button>
+      <div class="search-box">
+        <span style="color:var(--txt-dim);font-size:12px">⌕</span>
+        <input type="text" placeholder="Cari judul atau penulis..." oninput="onSearch(this.value)">
+      </div>
+    </div>
+    <table class="book-table">
+      <thead>
+        <tr>
+          <th class="cover-cell"></th>
+          <th>#</th><th>Pri</th><th>Judul & Penulis</th>
+          <th>Genre</th><th>Status</th><th style="text-align:right">Harga</th>
+        </tr>
+      </thead>
+      <tbody id="bookTableBody"></tbody>
+    </table>
+    <div class="pagination">
+      <span class="page-info" id="pageInfo"></span>
+      <button class="page-btn" onclick="prevPage()">← Prev</button>
+      <span id="pageNums"></span>
+      <button class="page-btn" onclick="nextPage()">Next →</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="section-title" id="sbTitle">Anggaran</div>
+    <div class="budget-ring-wrap">
+      <div style="position:relative;width:140px;height:140px">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="56" fill="none" stroke="var(--bg-border)" stroke-width="5"/>
+          <circle cx="70" cy="70" r="56" fill="none" stroke="var(--gold)" stroke-width="5"
+            id="ringArc" stroke-dasharray="352" stroke-dashoffset="352"
+            stroke-linecap="butt" transform="rotate(-90 70 70)" style="transition:stroke-dashoffset 1s ease"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-pct" id="ringPct">0%</div>
+          <div class="ring-label">Terbeli</div>
+        </div>
+      </div>
+      <div class="budget-details" id="budgetDetails"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title" id="genreTitle">Genre</div>
+    <div id="genreBars"></div>
+    <div class="divider"></div>
+    <div class="section-title">Top Prioritas</div>
+    <div id="topPriority"></div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal" onclick="closeDetailOverlay(event)">
+  <div class="modal">
+    <div class="modal-ornament" id="modalOrnament"></div>
+    <div class="modal-top">
+      <div class="modal-cover-area" id="modalCoverArea">
+        <span class="modal-cover-ph">📖</span>
+      </div>
+      <div class="modal-header">
+        <div class="modal-badge" id="modalBadge"></div>
+        <div class="modal-num" id="dNum"></div>
+        <div class="modal-title" id="dTitle"></div>
+        <div class="modal-author-nm" id="dAuthor"></div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-blurb" id="dBlurb"></div>
+      <div class="modal-meta" id="dMeta"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDetail()">Tutup</button>
+      <button class="btn btn-green" id="dToggleBought" onclick="toggleBoughtFromModal()"></button>
+      <button class="btn btn-gold" onclick="openEditFromModal()">Edit ✦</button>
+      <a class="btn btn-link" id="dLink" href="#" target="_blank">Toko ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PANEL -->
+<div class="edit-panel" id="editPanel">
+  <div class="ep-ornament"></div>
+  <div class="ep-header">
+    <h2 id="epTitle">KELOLA KOLEKSI</h2>
+    <p id="epSub">Tambah atau edit buku koleksi</p>
+    <button class="ep-close" onclick="closeEditPanel()">✕</button>
+  </div>
+  <div class="ep-body">
+    <div class="ep-tabs">
+      <button class="ep-tab active" id="epTabAdd" onclick="switchEpTab('add')">✦ Tambah Baru</button>
+      <button class="ep-tab" id="epTabEdit" onclick="switchEpTab('edit')" id="epTabEdit">Edit Terpilih</button>
+    </div>
+
+    <!-- ADD TAB -->
+    <div id="epAddPanel">
+      <div class="fsec-title">Informasi Buku</div>
+      <div class="form-group">
+        <label class="form-label">Judul Buku *</label>
+        <input class="form-input" id="aTitle" placeholder="Judul buku...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Penulis *</label>
+        <input class="form-input" id="aAuthor" placeholder="Nama penulis...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Library</label>
+        <select class="form-select" id="aLibrary">
+          <option value="everyman">Everyman's Library</option>
+          <option value="non-everyman">Non-Everyman Library</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Genre</label>
+          <input class="form-input" id="aGenre" placeholder="cth: Historical Fiction">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioritas</label>
+          <input class="form-input" id="aPriority" type="number" placeholder="cth: 10">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Harga (Rp)</label>
+          <input class="form-input" id="aPrice" type="number" placeholder="cth: 350000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Toko</label>
+          <select class="form-select" id="aStore">
+            <option value="Amazon">Amazon</option>
+            <option value="Periplus">Periplus</option>
+            <option value="Tokopedia">Tokopedia</option>
+            <option value="Shopee">Shopee</option>
+            <option value="Opentrolley">Opentrolley</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link Pembelian</label>
+        <input class="form-input" id="aLink" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Blurb / Deskripsi</label>
+        <textarea class="form-textarea" id="aBlurb" placeholder="Deskripsi singkat buku..."></textarea>
+      </div>
+
+      <div class="form-divider"></div>
+      <div class="fsec-title">Foto Sampul Buku</div>
+      <div class="photo-upload-area" id="aPhotoArea">
+        <input type="file" accept="image/*" onchange="handlePhotoUpload(this,'aPhotoPreview','aPhotoData')">
+        <img class="photo-preview" id="aPhotoPreview" src="" alt="preview">
+        <div id="aPhotoPlaceholder">
+          <div class="photo-upload-icon">📷</div>
+          <div class="photo-upload-label">Upload Foto Sampul</div>
+          <div class="photo-upload-sub">Klik atau drag & drop foto ke sini</div>
+          <div class="photo-upload-sub">JPG, PNG, WebP — maks 5MB</div>
+        </div>
+      </div>
+      <div class="photo-url-row">
+        <input class="form-input" id="aPhotoUrl" placeholder="Atau paste URL gambar...">
+        <button class="photo-url-btn" onclick="applyPhotoUrl('aPhotoUrl','aPhotoPreview','aPhotoArea','aPhotoData')">Terapkan</button>
+      </div>
+      <button class="photo-clear-btn" onclick="clearPhoto('aPhotoPreview','aPhotoArea','aPhotoData','aPhotoPlaceholder','aPhotoUrl')" style="display:none" id="aClearBtn">✕ Hapus Foto</button>
+      <input type="hidden" id="aPhotoData">
+
+      <div class="form-divider"></div>
+      <div class="toggle-row" style="margin-bottom:18px">
+        <div><div class="toggle-label">Sudah Dibeli?</div><div class="toggle-sub">Tandai jika buku sudah ada</div></div>
+        <div class="toggle" id="aBoughtToggle" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <button class="btn btn-gold" style="width:100%;text-align:center;padding:12px" onclick="addBook()">✦ Tambah ke Koleksi</button>
+    </div>
+
+    <!-- EDIT TAB -->
+    <div id="epEditPanel" style="display:none">
+      <div id="editNoSelection" style="text-align:center;padding:40px 0;color:var(--txt-dim);font-style:italic;font-size:14px">
+        Pilih buku dari tabel untuk diedit
+      </div>
+      <div id="editFormWrap" style="display:none">
+        <div class="fsec-title" id="editBookLabel">Edit Buku</div>
+        <div class="form-group">
+          <label class="form-label">Judul Buku</label>
+          <input class="form-input" id="eTitle">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Penulis</label>
+          <input class="form-input" id="eAuthor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Library</label>
+          <select class="form-select" id="eLibrary">
+            <option value="everyman">Everyman's Library</option>
+            <option value="non-everyman">Non-Everyman Library</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Genre</label>
+            <input class="form-input" id="eGenre">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prioritas</label>
+            <input class="form-input" id="ePriority" type="number">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Harga (Rp)</label>
+            <input class="form-input" id="ePrice" type="number">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Toko</label>
+            <select class="form-select" id="eStore">
+              <option value="Amazon">Amazon</option>
+              <option value="Periplus">Periplus</option>
+              <option value="Tokopedia">Tokopedia</option>
+              <option value="Shopee">Shopee</option>
+              <option value="Opentrolley">Opentrolley</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Link Pembelian</label>
+          <input class="form-input" id="eLink">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Blurb / Deskripsi</label>
+          <textarea class="form-textarea" id="eBlurb"></textarea>
+        </div>
+
+        <div class="form-divider"></div>
+        <div class="fsec-title">Foto Sampul Buku</div>
+        <div class="photo-upload-area" id="ePhotoArea">
+          <input type="file" accept="image/*" onchange="handlePhotoUpload(this,'ePhotoPreview','ePhotoData')">
+          <img class="photo-preview" id="ePhotoPreview" src="" alt="preview">
+          <div id="ePhotoPlaceholder">
+            <div class="photo-upload-icon">📷</div>
+            <div class="photo-upload-label">Upload atau Ganti Foto</div>
+            <div class="photo-upload-sub">Klik untuk pilih foto baru</div>
+          </div>
+        </div>
+        <div class="photo-url-row">
+          <input class="form-input" id="ePhotoUrl" placeholder="Atau paste URL gambar...">
+          <button class="photo-url-btn" onclick="applyPhotoUrl('ePhotoUrl','ePhotoPreview','ePhotoArea','ePhotoData')">Terapkan</button>
+        </div>
+        <button class="photo-clear-btn" id="eClearBtn" onclick="clearPhoto('ePhotoPreview','ePhotoArea','ePhotoData','ePhotoPlaceholder','ePhotoUrl')">✕ Hapus Foto</button>
+        <input type="hidden" id="ePhotoData">
+
+        <div class="form-divider"></div>
+        <div class="toggle-row" style="margin-bottom:18px">
+          <div><div class="toggle-label">Sudah Dibeli?</div><div class="toggle-sub">Klik untuk toggle status</div></div>
+          <div class="toggle" id="eBoughtToggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-gold" style="flex:1;text-align:center;padding:11px" onclick="saveEdit()">Simpan Perubahan</button>
+          <button class="btn btn-danger" style="padding:11px 14px" onclick="confirmDelete()">🗑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="modal-ornament"></div>
+    <h3>Hapus Buku?</h3>
+    <p id="confirmMsg"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Batal</button>
+      <button class="btn btn-danger" onclick="deleteBook()">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HELPERS ──
+const NONFIC=["philosophy","ethics","military strategy","history","non-fiction","biography","political philosophy","economics","social philosophy","realpolitik"];
+function classify(g){const gl=g.toLowerCase();for(const k of NONFIC)if(gl.includes(k))return"Non-Fiksi";return"Fiksi"}
+function fmt(n){return'Rp'+Number(n).toLocaleString('id-ID')}
+function fmtS(n){if(n>=1000000)return'Rp'+(n/1000000).toFixed(1)+'Jt';if(n>=1000)return'Rp'+(n/1000).toFixed(0)+'Rb';return fmt(n)}
+function $(id){return document.getElementById(id)}
+
+// ── DATA ──
+function loadData(){
+  const raw=localStorage.getItem('myLibraryV3');
+  if(raw) return JSON.parse(raw);
+  return getDefaultBooks();
+}
+function saveData(){localStorage.setItem('myLibraryV3',JSON.stringify(books))}
+
+let books=loadData();
+let nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
+let currentLib='everyman', currentFilter='all', currentSearch='', currentPage=1;
+const perPage=15;
+let editingId=null, deletingId=null, modalOpenId=null, epCurrentTab='add';
+
+// ── STATE ──
+function getLibBooks(lib){return books.filter(b=>b.library===lib)}
+function getFiltered(){
+  return books.filter(b=>{
+    if(b.library!==currentLib)return false;
+    const mf=currentFilter==='all'?true:currentFilter==='bought'?b.bought:currentFilter==='not-bought'?!b.bought:currentFilter==='fiksi'?classify(b.genre)==='Fiksi':currentFilter==='nonfiksi'?classify(b.genre)==='Non-Fiksi':true;
+    const q=currentSearch.toLowerCase();
+    const ms=!q||b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q);
+    return mf&&ms;
+  });
+}
+
+// ── SWITCH LIBRARY ──
+function switchLib(lib){
+  currentLib=lib; currentFilter='all'; currentPage=1;
+  currentSearch='';
+  document.querySelectorAll('.search-box input').forEach(i=>i.value='');
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn')[0].classList.add('active');
+  $('tabEveryman').classList.toggle('active',lib==='everyman');
+  $('tabNon').classList.toggle('active',lib==='non-everyman');
+  const isEv=lib==='everyman';
+  $('sectionTitle').className='section-title'+(isEv?'':' blue');
+  $('sbTitle').className='section-title'+(isEv?'':' blue');
+  $('genreTitle').className='section-title'+(isEv?'':' blue');
+  renderAll();
+}
+
+// ── RENDER STATS ──
+function renderStats(){
+  const lb=getLibBooks(currentLib);
+  const total=lb.length, bought=lb.filter(b=>b.bought).length;
+  const notB=total-bought;
+  const spent=lb.filter(b=>b.bought).reduce((s,b)=>s+b.price,0);
+  const remain=lb.filter(b=>!b.bought).reduce((s,b)=>s+b.price,0);
+  const pct=total?Math.round(bought/total*100):0;
+  const accentColor=currentLib==='everyman'?'var(--gold)':'var(--blue-lt)';
+  const circ=2*Math.PI*56;
+  $('ringArc').style.strokeDashoffset=circ-(pct/100)*circ;
+  $('ringArc').style.stroke=currentLib==='everyman'?'var(--gold)':'var(--blue-lt)';
+  $('ringPct').textContent=pct+'%';
+  $('statsRow').innerHTML=`
+    <div class="stat-card" data-roman="I"><div class="stat-label">Total Buku</div><div class="stat-value" style="color:${accentColor}">${total}</div><div class="stat-sub">volume dalam katalog</div></div>
+    <div class="stat-card" data-roman="II"><div class="stat-label">Sudah Dibeli</div><div class="stat-value green">${bought}</div><div class="stat-sub">${pct}% dari koleksi</div></div>
+    <div class="stat-card" data-roman="III"><div class="stat-label">Belum Dibeli</div><div class="stat-value" style="color:var(--brown-lt)">${notB}</div><div class="stat-sub">dalam wishlist</div></div>
+    <div class="stat-card" data-roman="IV"><div class="stat-label">Total Pengeluaran</div><div class="stat-value sm">${fmtS(spent)}</div><div class="stat-sub">dari ${bought} buku terbeli</div></div>
+    <div class="stat-card" data-roman="V"><div class="stat-label">Estimasi Sisa</div><div class="stat-value sm" style="color:var(--brown-lt)">${fmtS(remain)}</div><div class="stat-sub">untuk ${notB} buku tersisa</div></div>`;
+  $('countEveryman').textContent=getLibBooks('everyman').length;
+  $('countNon').textContent=getLibBooks('non-everyman').length;
+  $('budgetDetails').innerHTML=`
+    <div class="budget-row"><span class="budget-key">Sudah Dibeli</span><span class="budget-val green">${fmt(spent)}</span></div>
+    <div class="budget-row"><span class="budget-key">Estimasi Sisa</span><span class="budget-val" style="color:var(--brown-lt)">${fmt(remain)}</span></div>
+    <div class="budget-row"><span class="budget-key">Total Estimasi</span><span class="budget-val gold">${fmt(spent+remain)}</span></div>`;
+}
+
+// ── GENRE BARS ──
+function renderGenre(){
+  const lb=getLibBooks(currentLib);
+  const counts={};
+  lb.forEach(b=>{const g=b.genre.split('/')[0].trim();counts[g]=(counts[g]||0)+1});
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const max=sorted[0]?sorted[0][1]:1;
+  const isBlue=currentLib==='non-everyman';
+  $('genreBars').innerHTML=sorted.map(([g,c])=>`
+    <div class="genre-bar-item">
+      <div class="genre-bar-header"><span class="genre-bar-name">${g}</span><span class="genre-bar-count">${c}</span></div>
+      <div class="genre-bar-track"><div class="genre-bar-fill${isBlue?' blue':''}" style="width:${(c/max)*100}%"></div></div>
+    </div>`).join('');
+}
+
+// ── TOP PRIORITY ──
+function renderTopPriority(){
+  const lb=getLibBooks(currentLib);
+  const top=lb.filter(b=>!b.bought).sort((a,b)=>a.priority-b.priority).slice(0,5);
+  $('topPriority').innerHTML=top.map(b=>`
+    <div class="priority-item" onclick="openDetail(${b.id})">
+      <div class="priority-num-sb">${b.priority}</div>
+      ${b.photo?`<img class="priority-thumb" src="${b.photo}" alt="">`:`<div class="priority-thumb-ph">📖</div>`}
+      <div class="priority-info">
+        <div class="priority-title">${b.title}</div>
+        <div class="priority-author-sb">${b.author}</div>
+      </div>
+      <div class="priority-price">${fmt(b.price)}</div>
+    </div>`).join('');
+}
+
+// ── TABLE ──
+function renderTable(){
+  const filtered=getFiltered();
+  const total=filtered.length, pages=Math.max(1,Math.ceil(total/perPage));
+  if(currentPage>pages)currentPage=1;
+  const slice=filtered.slice((currentPage-1)*perPage,currentPage*perPage);
+  const isBlue=currentLib==='non-everyman';
+  $('bookTableBody').innerHTML=slice.map((b,i)=>`
+    <tr onclick="openDetail(${b.id})" style="animation-delay:${i*.016}s;animation:fadeIn .3s ease both">
+      <td class="cover-cell">
+        ${b.photo?`<img class="cover-thumb" src="${b.photo}" alt="">`:`<div class="cover-placeholder">📖</div>`}
+      </td>
+      <td class="book-num">${b.no}</td>
+      <td class="priority-num ${b.priority<=5?'top':''}">${b.priority}</td>
+      <td class="book-title-cell">
+        <div class="book-title-main">${b.title}</div>
+        <div class="book-author">${b.author}</div>
+      </td>
+      <td><span class="genre-tag${isBlue?' blue':''}">${b.genre.split('/')[0].trim()}</span></td>
+      <td><span class="status-badge ${b.bought?'bought':'not-bought'}"><span class="status-dot"></span>${b.bought?'Dibeli':'Belum'}</span></td>
+      <td class="price-cell">${fmt(b.price)}</td>
+    </tr>`).join('');
+  $('pageInfo').textContent=`${total} buku`;
+  const nums=$('pageNums'); nums.innerHTML='';
+  for(let p=1;p<=pages;p++){
+    const btn=document.createElement('button');
+    btn.className='page-btn'+(p===currentPage?' active':'');
+    btn.textContent=p;
+    btn.onclick=()=>{currentPage=p;renderTable()};
+    nums.appendChild(btn);
+  }
+}
+
+function setFilter(f,el){
+  currentFilter=f;currentPage=1;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+function onSearch(q){currentSearch=q;currentPage=1;renderTable()}
+function prevPage(){if(currentPage>1){currentPage--;renderTable()}}
+function nextPage(){const p=Math.ceil(getFiltered().length/perPage);if(currentPage<p){currentPage++;renderTable()}}
+
+// ── DETAIL MODAL ──
+function openDetail(id){
+  const b=books.find(x=>x.id===id); if(!b)return;
+  modalOpenId=id;
+  const isEv=b.library==='everyman';
+  $('modalOrnament').className='modal-ornament'+(isEv?'':' blue');
+  $('modalBadge').textContent=isEv?"Everyman's Library":"Non-Everyman Library";
+  $('modalBadge').className='modal-badge '+(isEv?'everyman':'non-everyman');
+  $('dNum').textContent=`No. ${b.no}  ·  Prioritas #${b.priority}`;
+  $('dTitle').textContent=b.title;
+  $('dAuthor').textContent=b.author;
+  $('dBlurb').textContent=b.blurb||'—';
+  $('dMeta').innerHTML=`
+    <div><div class="meta-key">Genre</div><div class="meta-val">${b.genre}</div></div>
+    <div><div class="meta-key">Status</div><div class="meta-val" style="color:${b.bought?'#7ab86a':'var(--txt-muted)'}">${b.bought?'✓ Sudah Dibeli':'Belum Dibeli'}</div></div>
+    <div><div class="meta-key">Harga</div><div class="meta-val" style="color:var(--gold)">${fmt(b.price)}</div></div>
+    <div><div class="meta-key">Toko</div><div class="meta-val">${b.store}</div></div>
+    <div><div class="meta-key">Kategori</div><div class="meta-val">${classify(b.genre)}</div></div>
+    <div><div class="meta-key">Library</div><div class="meta-val" style="color:${isEv?'var(--gold)':'var(--blue-lt)'}">${isEv?"Everyman's":"Non-Everyman"}</div></div>`;
+  $('dLink').href=b.link||'#';
+  $('dToggleBought').textContent=b.bought?'↩ Tandai Belum':'✓ Tandai Dibeli';
+  $('dToggleBought').className='btn '+(b.bought?'btn-ghost':'btn-green');
+  const ca=$('modalCoverArea');
+  ca.innerHTML=b.photo?`<img class="modal-cover-img" src="${b.photo}" alt="">`:`<span class="modal-cover-ph">📖</span>`;
+  $('detailModal').classList.add('open');
+}
+function closeDetail(){$('detailModal').classList.remove('open');modalOpenId=null}
+function closeDetailOverlay(e){if(e.target===$('detailModal'))closeDetail()}
+function toggleBoughtFromModal(){
+  if(modalOpenId===null)return;
+  const b=books.find(x=>x.id===modalOpenId); if(!b)return;
+  b.bought=!b.bought; saveData(); renderAll(); openDetail(modalOpenId);
+  showToast(b.bought?`✓ "${b.title}" ditandai dibeli`:`"${b.title}" ditandai belum`,'success');
+}
+function openEditFromModal(){closeDetail();openEditPanel(modalOpenId)}
+
+// ── EDIT PANEL ──
+function toggleEditPanel(){
+  const panel=$('editPanel');
+  if(panel.classList.contains('open'))closeEditPanel();
+  else openEditPanel(null);
+}
+function openEditPanel(id){
+  editingId=id;
+  $('editPanel').classList.add('open');
+  $('editToggleBtn').classList.add('active');
+  if(id){
+    switchEpTab('edit');
+    loadEditForm(id);
+  } else {
+    switchEpTab('add');
+  }
+}
+function closeEditPanel(){
+  $('editPanel').classList.remove('open');
+  $('editToggleBtn').classList.remove('active');
+  editingId=null;
+}
+function switchEpTab(tab){
+  epCurrentTab=tab;
+  $('epTabAdd').classList.toggle('active',tab==='add');
+  $('epTabEdit').classList.toggle('active',tab==='edit');
+  $('epAddPanel').style.display=tab==='add'?'block':'none';
+  $('epEditPanel').style.display=tab==='edit'?'block':'none';
+}
+
+function loadEditForm(id){
+  const b=books.find(x=>x.id===id); if(!b)return;
+  $('editNoSelection').style.display='none';
+  $('editFormWrap').style.display='block';
+  $('editBookLabel').textContent=`"${b.title}"`;
+  $('eTitle').value=b.title;
+  $('eAuthor').value=b.author;
+  $('eLibrary').value=b.library||'everyman';
+  $('eGenre').value=b.genre;
+  $('ePrice').value=b.price;
+  $('ePriority').value=b.priority;
+  $('eStore').value=b.store;
+  $('eLink').value=b.link||'';
+  $('eBlurb').value=b.blurb||'';
+  $('eBoughtToggle').className='toggle'+(b.bought?' on':'');
+  // Photo
+  const prev=$('ePhotoPreview'), area=$('ePhotoArea'), ph=$('ePhotoPlaceholder');
+  const pd=$('ePhotoData');
+  if(b.photo){
+    prev.src=b.photo; prev.classList.add('show');
+    area.classList.add('has-photo'); ph.style.display='none';
+    pd.value=b.photo; $('eClearBtn').style.display='block';
+  } else {
+    prev.classList.remove('show'); area.classList.remove('has-photo');
+    ph.style.display='block'; pd.value=''; $('eClearBtn').style.display='none';
+  }
+}
+
+// ── PHOTO HELPERS ──
+function handlePhotoUpload(input, previewId, dataId){
+  const file=input.files[0]; if(!file)return;
+  if(file.size>5*1024*1024){showToast('Foto terlalu besar (maks 5MB)','error');return}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const data=e.target.result;
+    $(previewId).src=data; $(previewId).classList.add('show');
+    $(dataId).value=data;
+    // find area and placeholder
+    const area=$(previewId).closest('.photo-upload-area');
+    if(area){area.classList.add('has-photo'); const ph=area.querySelector('[id$="PhotoPlaceholder"]');if(ph)ph.style.display='none'}
+    // show clear btn
+    const clearId=previewId.replace('PhotoPreview','ClearBtn');
+    if($(clearId))$(clearId).style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+function applyPhotoUrl(urlId, previewId, areaId, dataId){
+  const url=$(urlId).value.trim(); if(!url){showToast('URL kosong','error');return}
+  $(previewId).src=url; $(previewId).classList.add('show');
+  $(dataId).value=url;
+  $(areaId).classList.add('has-photo');
+  const ph=document.getElementById(areaId.replace('Area','Placeholder')||areaId);
+  const phEl=$(areaId).querySelector('[id$="PhotoPlaceholder"]');if(phEl)phEl.style.display='none';
+  const clearId=previewId.replace('PhotoPreview','ClearBtn');
+  if($(clearId))$(clearId).style.display='block';
+  showToast('✓ Foto diterapkan','success');
+}
+function clearPhoto(previewId, areaId, dataId, phId, urlId){
+  $(previewId).src=''; $(previewId).classList.remove('show');
+  $(dataId).value=''; $(areaId).classList.remove('has-photo');
+  if($(phId))$(phId).style.display='block';
+  if($(urlId))$(urlId).value='';
+  const clearId=previewId.replace('PhotoPreview','ClearBtn');
+  if($(clearId))$(clearId).style.display='none';
+}
+
+// ── ADD BOOK ──
+function addBook(){
+  const title=$('aTitle').value.trim(), author=$('aAuthor').value.trim();
+  if(!title||!author){showToast('Judul dan penulis wajib diisi','error');return}
+  const lib=$('aLibrary').value;
+  const libBooks=getLibBooks(lib);
+  const newNo=libBooks.length?Math.max(...libBooks.map(b=>b.no))+1:1;
+  books.push({
+    id:nextId++, no:newNo, library:lib,
+    title, author,
+    genre:$('aGenre').value.trim()||'Fiction',
+    price:parseInt($('aPrice').value)||0,
+    priority:parseInt($('aPriority').value)||99,
+    store:$('aStore').value,
+    link:$('aLink').value.trim(),
+    blurb:$('aBlurb').value.trim(),
+    bought:$('aBoughtToggle').classList.contains('on'),
+    photo:$('aPhotoData').value||null,
+  });
+  saveData(); renderAll();
+  ['aTitle','aAuthor','aGenre','aPrice','aPriority','aLink','aBlurb','aPhotoData','aPhotoUrl'].forEach(id=>{if($(id))$(id).value=''});
+  $('aBoughtToggle').classList.remove('on');
+  $('aStore').value='Amazon';
+  clearPhoto('aPhotoPreview','aPhotoArea','aPhotoData','aPhotoPlaceholder','aPhotoUrl');
+  showToast(`✓ "${title}" ditambahkan ke ${lib==='everyman'?"Everyman's":"Non-Everyman"} Library`,'success');
+}
+
+// ── SAVE EDIT ──
+function saveEdit(){
+  if(!editingId)return;
+  const b=books.find(x=>x.id===editingId); if(!b)return;
+  b.title   =$('eTitle').value.trim()||b.title;
+  b.author  =$('eAuthor').value.trim()||b.author;
+  b.library =$('eLibrary').value;
+  b.genre   =$('eGenre').value.trim()||b.genre;
+  b.price   =parseInt($('ePrice').value)||b.price;
+  b.priority=parseInt($('ePriority').value)||b.priority;
+  b.store   =$('eStore').value;
+  b.link    =$('eLink').value.trim();
+  b.blurb   =$('eBlurb').value.trim();
+  b.bought  =$('eBoughtToggle').classList.contains('on');
+  const pd=$('ePhotoData').value;
+  b.photo   =pd||null;
+  saveData(); renderAll(); closeEditPanel();
+  showToast(`✓ "${b.title}" berhasil diperbarui`,'success');
+}
+
+// ── DELETE ──
+function confirmDelete(){
+  if(!editingId)return;
+  const b=books.find(x=>x.id===editingId); deletingId=editingId;
+  $('confirmMsg').textContent=`"${b.title}" akan dihapus secara permanen.`;
+  $('confirmOverlay').classList.add('open');
+}
+function closeConfirm(){$('confirmOverlay').classList.remove('open');deletingId=null}
+function deleteBook(){
+  const b=books.find(x=>x.id===deletingId);
+  books=books.filter(x=>x.id!==deletingId);
+  saveData(); renderAll(); closeConfirm(); closeEditPanel();
+  showToast(`"${b.title}" dihapus dari koleksi`);
+}
+
+// ── TOAST ──
+function showToast(msg,type=''){
+  const t=$('toast'); t.textContent=msg;
+  t.className='toast'+(type?' '+type:'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── RENDER ALL ──
+function renderAll(){renderStats();renderGenre();renderTopPriority();renderTable()}
+
+// ── DEFAULT DATA ──
+function getDefaultBooks(){
+  return [
+  {id:1,no:1,library:"everyman",priority:19,title:"Catch-22",author:"Joseph Heller",genre:"Satire / War Fiction",blurb:"Sebuah satir jenius tentang Kapten Yossarian yang terjebak dalam dilema birokrasi militer Perang Dunia II.",bought:false,store:"Tokopedia",link:"https://www.tokopedia.com/kerajaanbuku/catch-22",price:616900,photo:null},
+  {id:2,no:2,library:"everyman",priority:23,title:"Collected Stories of Franz Kafka",author:"Franz Kafka",genre:"Absurdist / Short Stories",blurb:"Volume ini memuat seluruh kegelisahan Kafka—termasuk The Metamorphosis.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857151453",price:332096,photo:null},
+  {id:3,no:3,library:"everyman",priority:25,title:"Collected Stories of Roald Dahl",author:"Roald Dahl",genre:"Short Stories / Fiction",blurb:"Kumpulan cerita pendek yang membedah sisi gelap sifat manusia.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781841593005",price:389000,photo:null},
+  {id:4,no:4,library:"everyman",priority:49,title:"Comedies, Volume 1",author:"William Shakespeare",genre:"Classic Drama / Comedy",blurb:"Kematangan Shakespeare dalam menulis komedi situasi.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857152050",price:318587,photo:null},
+  {id:5,no:5,library:"everyman",priority:50,title:"Comedies, Volume 2",author:"William Shakespeare",genre:"Classic Drama / Comedy",blurb:"Kelanjutan komedi Shakespeare tentang kerumitan cinta.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857152263",price:242815,photo:null},
+  {id:6,no:6,library:"everyman",priority:27,title:"Demons",author:"Fyodor Dostoevsky",genre:"Philosophical Fiction",blurb:"Novel politik paling profetik di dunia.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857151824",price:389000,photo:null},
+  {id:7,no:7,library:"everyman",priority:33,title:"Don Quixote",author:"Miguel de Cervantes",genre:"Adventure / Satire",blurb:"Seorang bangsawan tua kehilangan akal sehatnya karena terlalu banyak membaca.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150032",price:389000,photo:null},
+  {id:8,no:8,library:"everyman",priority:26,title:"Dubliners",author:"James Joyce",genre:"Short Stories / Modernist Fiction",blurb:"15 cerita pendek memotret kelumpuhan moral warga Dublin.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/185715049X",price:281212,photo:null},
+  {id:9,no:9,library:"everyman",priority:43,title:"Frankenstein",author:"Mary Shelley",genre:"Gothic Fiction / Science Fiction",blurb:"Tragedi ilmuwan yang melanggar batas kodrat.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150629",price:390000,photo:null},
+  {id:10,no:10,library:"everyman",priority:45,title:"Great Expectations",author:"Charles Dickens",genre:"Victorian Fiction / Bildungsroman",blurb:"Perjalanan hidup Pip dari anak desa miskin menjadi pria terhormat.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150568",price:331000,photo:null},
+  {id:11,no:11,library:"everyman",priority:37,title:"His Dark Materials",author:"Philip Pullman",genre:"Fantasy / Young Adult",blurb:"Trilogi fantasi filosofis Lyra Belacqua melintasi dunia paralel.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1841593427",price:337499,photo:null},
+  {id:12,no:12,library:"everyman",priority:51,title:"Histories, Volume 1",author:"William Shakespeare",genre:"Classic Drama / History",blurb:"Drama kronik kerajaan Inggris: Richard II dan Henry IV.",bought:false,store:"Opentrolley",link:"https://opentrolley.co.id/book/9780679433125",price:541000,photo:null},
+  {id:13,no:13,library:"everyman",priority:52,title:"Histories, Volume 2",author:"William Shakespeare",genre:"Classic Drama / History",blurb:"Narasi kekuasaan Inggris termasuk kisah heroik Henry V.",bought:false,store:"Opentrolley",link:"https://opentrolley.co.id/book/9780679436508",price:543000,photo:null},
+  {id:14,no:14,library:"everyman",priority:44,title:"Jane Eyre",author:"Charlotte Bronte",genre:"Gothic Romance / Victorian Fiction",blurb:"Keteguhan hati seorang perempuan yatim piatu.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857150104",price:187775,photo:null},
+  {id:15,no:15,library:"everyman",priority:39,title:"Les Miserables",author:"Victor Hugo",genre:"Historical Fiction / Classics",blurb:"Epik tentang kemiskinan, hukum, dan penebusan dosa di Prancis.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857152395",price:442419,photo:null},
+  {id:16,no:16,library:"everyman",priority:28,title:"Love in the Time of Cholera",author:"Gabriel Garcia Marquez",genre:"Romance / Magical Realism",blurb:"Florentino menunggu 51 tahun untuk cinta sejatinya.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857152357",price:414000,photo:null},
+  {id:17,no:17,library:"everyman",priority:9,title:"Meditations",author:"Marcus Aurelius",genre:"Philosophy / Ethics",blurb:"Catatan pribadi kaisar — intisari Stoicism.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857150554",price:300575,photo:null},
+  {id:18,no:18,library:"everyman",priority:41,title:"Middlemarch",author:"George Eliot",genre:"Victorian Fiction / Realism",blurb:"Novel dewasa tentang kehidupan sosial kota kecil Inggris.",bought:false,store:"Tokopedia",link:"https://www.tokopedia.com/kerajaanbuku/middlemarch",price:662000,photo:null},
+  {id:19,no:19,library:"everyman",priority:38,title:"Moby-Dick",author:"Herman Melville",genre:"Adventure / Philosophical Fiction",blurb:"Perburuan obsesif Kapten Ahab terhadap paus putih raksasa.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857150406",price:778793,photo:null},
+  {id:20,no:20,library:"everyman",priority:14,title:"Notes from the Underground",author:"Fyodor Dostoevsky",genre:"Philosophical Fiction / Existentialism",blurb:"Manusia Bawah Tanah yang sinis tentang kehendak bebas.",bought:false,store:"Tokopedia",link:"https://www.tokopedia.com/kerajaanbuku/notes-from-underground",price:638000,photo:null},
+  {id:21,no:21,library:"everyman",priority:6,title:"Oliver Twist",author:"Charles Dickens",genre:"Victorian Fiction / Social Realism",blurb:"Kritik sosial terhadap eksploitasi anak di London.",bought:true,store:"Shopee",link:"https://shopee.co.id/Oliver-Twist",price:272500,photo:null},
+  {id:22,no:22,library:"everyman",priority:22,title:"One Hundred Years of Solitude",author:"Gabriel Garcia Marquez",genre:"Magical Realism / Saga",blurb:"Sejarah seratus tahun keluarga Buendía di Macondo.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857152234",price:342000,photo:null},
+  {id:23,no:23,library:"everyman",priority:35,title:"Plays, Prose Writings and Poems",author:"Oscar Wilde",genre:"Classics / Anthology",blurb:"Kecemerlangan Oscar Wilde dari drama jenaka hingga esai estetika.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150421",price:370000,photo:null},
+  {id:24,no:24,library:"everyman",priority:42,title:"Pride and Prejudice",author:"Jane Austen",genre:"Classic Romance / Satire of Manners",blurb:"Elizabeth Bennet yang cerdas vs Mr. Darcy yang angkuh.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150018",price:292000,photo:null},
+  {id:25,no:25,library:"everyman",priority:46,title:"Sense And Sensibility",author:"Jane Austen",genre:"Classic Romance / Victorian Fiction",blurb:"Dua saudara perempuan antara logika dan perasaan.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150513",price:481000,photo:null},
+  {id:26,no:26,library:"everyman",priority:34,title:"Symposium and Phaedrus",author:"Plato",genre:"Philosophy / Classics",blurb:"Dialog Plato paling indah tentang mendefinisikan Eros.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857151941",price:249691,photo:null},
+  {id:27,no:27,library:"everyman",priority:17,title:"The Arabian Nights",author:"Husain Haddawy",genre:"Folklore / Fantasy / Adventure",blurb:"Scheherazade bercerita selama 1001 malam untuk menyelamatkan nyawanya.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1841593613",price:379377,photo:null},
+  {id:28,no:28,library:"everyman",priority:18,title:"The Arabian Nights II",author:"Husain Haddawy",genre:"Folklore / Adventure / Fantasy",blurb:"Tujuh pelayaran Sindbad, Ali Baba, dan kisah Aladdin.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/dp/0375403213",price:637624,photo:null},
+  {id:29,no:29,library:"everyman",priority:12,title:"The Art of War",author:"Sun-Tzu",genre:"Military Strategy / Philosophy",blurb:"Kemenangan terbaik adalah menang tanpa bertempur.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1841593850",price:281212,photo:null},
+  {id:30,no:30,library:"everyman",priority:36,title:"The Best of Wodehouse",author:"P.G. Wodehouse",genre:"Humor / Short Stories",blurb:"Antologi humor Inggris dengan duo Jeeves dan Bertie Wooster.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1841593060",price:379377,photo:null},
+  {id:31,no:31,library:"everyman",priority:2,title:"The Brothers Karamazov",author:"Fyodor Dostoevsky",genre:"Philosophical Fiction / Classics",blurb:"Pertanyaan terdalam: jika Tuhan tidak ada, apakah segala sesuatu diizinkan?",bought:true,store:"Shopee",link:"https://shopee.co.id/The-Brothers-Karamazov",price:480460,photo:null},
+  {id:32,no:32,library:"everyman",priority:24,title:"The Collected Stories (Hemingway)",author:"Ernest Hemingway",genre:"Short Stories / Literary Fiction",blurb:"Gaya teori gunung es tentang keberanian dan kekalahan.",bought:false,store:"Tokopedia",link:"https://www.tokopedia.com/kerajaanbuku/the-collected-stories",price:619000,photo:null},
+  {id:33,no:33,library:"everyman",priority:4,title:"The Collected Works (Gibran)",author:"Kahlil Gibran",genre:"Poetry / Philosophy",blurb:"Kebijaksanaan Timur dan Barat melalui The Prophet.",bought:true,store:"Periplus",link:"https://www.periplus.com/p/9780307267078",price:539000,photo:null},
+  {id:34,no:34,library:"everyman",priority:15,title:"The Complete Works (Montaigne)",author:"Michel de Montaigne",genre:"Philosophy / Literary Non-fiction",blurb:"Orang pertama yang bereksperimen terhadap pikirannya sendiri lewat tulisan.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/185715259X",price:546439,photo:null},
+  {id:35,no:35,library:"everyman",priority:40,title:"The Count of Monte Cristo",author:"Alexandre Dumas",genre:"Adventure / Historical Fiction",blurb:"Edmond Dantès dikhianati, dipenjara 14 tahun, lalu membalas dendam.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1841593206",price:442419,photo:null},
+  {id:36,no:36,library:"everyman",priority:53,title:"The Decline and Fall (1-3)",author:"Edward Gibbon",genre:"History / Non-Fiction",blurb:"Keruntuhan Kekaisaran Romawi dari puncak hingga jatuhnya Konstantinopel.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857150953",price:986607,photo:null},
+  {id:37,no:37,library:"everyman",priority:54,title:"The Decline and Fall (4-6)",author:"Edward Gibbon",genre:"History / Non-Fiction",blurb:"Kelanjutan riset Gibbon tentang keruntuhan Romawi.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857151925",price:976025,photo:null},
+  {id:38,no:38,library:"everyman",priority:16,title:"The Divine Comedy",author:"Dante Alighieri",genre:"Epic Poetry / Classics",blurb:"Perjalanan epik melintasi Neraka, Purgatori, dan Surga.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857151836",price:545538,photo:null},
+  {id:39,no:39,library:"everyman",priority:30,title:"The Good Soldier",author:"Ford Madox Ford",genre:"Modernist Fiction / Literary Fiction",blurb:"Tragedi dinarasikan oleh saksi yang tidak bisa dipercaya.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857150201",price:249691,photo:null},
+  {id:40,no:40,library:"everyman",priority:29,title:"The Great Gatsby",author:"F. Scott Fitzgerald",genre:"Modernist Fiction / Classics",blurb:"Impian Jay Gatsby untuk meraih kembali cinta masa lalunya.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150193",price:341000,photo:null},
+  {id:41,no:41,library:"everyman",priority:3,title:"The Idiot",author:"Fyodor Dostoevsky",genre:"Philosophical Fiction / Classics",blurb:"Manusia yang benar-benar baik gagal menghadapi dunia.",bought:true,store:"Shopee",link:"https://shopee.co.id/the-idiot",price:380200,photo:null},
+  {id:42,no:42,library:"everyman",priority:55,title:"The Life of Samuel Johnson",author:"James Boswell",genre:"Biography / History",blurb:"Biografi kejeniusan intelektual Samuel Johnson.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857151011",price:365643,photo:null},
+  {id:43,no:43,library:"everyman",priority:13,title:"The Oresteia",author:"Aeschylus",genre:"Classic Drama / Tragedy",blurb:"Trilogi Yunani utuh tentang kutukan darah keluarga Atreus.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857152603",price:247439,photo:null},
+  {id:44,no:44,library:"everyman",priority:56,title:"The Outsider",author:"Albert Camus",genre:"Existentialist Fiction",blurb:"Meursault yang terasing dari norma emosional masyarakat.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857151398",price:365000,photo:null},
+  {id:45,no:45,library:"everyman",priority:21,title:"The Plague & Other Works",author:"Albert Camus",genre:"Existentialist Fiction / Philosophy",blurb:"Wabah sebagai metafora absurditas kehidupan.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857152786",price:111674,photo:null},
+  {id:46,no:46,library:"everyman",priority:11,title:"The Prince",author:"Niccolo Machiavelli",genre:"Political Philosophy / Realpolitik",blurb:"Memisahkan politik dari moralitas konvensional.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150797",price:316000,photo:null},
+  {id:47,no:47,library:"everyman",priority:48,title:"The Sonnets and Narrative Poems",author:"William Shakespeare",genre:"Poetry / Classics",blurb:"154 soneta tentang waktu, kematian, kecantikan, dan cinta.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857150910",price:275808,photo:null},
+  {id:48,no:48,library:"everyman",priority:20,title:"The Stranger / The Outsider",author:"Albert Camus",genre:"Existentialist / Absurdist Fiction",blurb:"'Hari ini ibu mati. Atau mungkin kemarin, aku tidak tahu.'",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857151399",price:247439,photo:null},
+  {id:49,no:49,library:"everyman",priority:32,title:"The Tale of Genji",author:"Murasaki Shikibu",genre:"Classic Literature / Psychological Fiction",blurb:"Putra kaisar yang menawan — konsep mono no aware.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857151089",price:536532,photo:null},
+  {id:50,no:50,library:"everyman",priority:47,title:"The Theban Plays",author:"Sophocles",genre:"Classic Drama / Tragedy",blurb:"Tragedi Oedipus — takdir vs pilihan bebas manusia.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857150937",price:283463,photo:null},
+  {id:51,no:51,library:"everyman",priority:31,title:"The Trial",author:"Franz Kafka",genre:"Existentialist Fiction / Absurdist",blurb:"Josef K. ditangkap tanpa alasan jelas — teror birokrasi.",bought:false,store:"Periplus",link:"https://www.periplus.com/p/9781857150759",price:292000,photo:null},
+  {id:52,no:52,library:"everyman",priority:10,title:"The Wealth Of Nations",author:"Adam Smith",genre:"Economics / Social Philosophy",blurb:"Fondasi sistem ekonomi dunia — pembagian kerja.",bought:false,store:"Amazon",link:"https://www.amazon.co.uk/gp/product/1857150112",price:318587,photo:null},
+  {id:53,no:53,library:"everyman",priority:7,title:"Tragedies, Volume 1",author:"William Shakespeare",genre:"Classic Drama / Tragedy",blurb:"Hamlet, Macbeth — kegelapan jiwa manusia.",bought:false,store:"Opentrolley",link:"https://opentrolley.co.id/book/9780679417422",price:558000,photo:null},
+  {id:54,no:54,library:"everyman",priority:8,title:"Tragedies, Volume 2",author:"William Shakespeare",genre:"Classic Drama / Tragedy",blurb:"Kelanjutan drama kegelapan Shakespeare.",bought:false,store:"Opentrolley",link:"https://opentrolley.co.id/book/9780679423065",price:666000,photo:null},
+  {id:55,no:55,library:"everyman",priority:1,title:"War and Peace",author:"Leo Tolstoy",genre:"Historical Fiction / Epic",blurb:"Siapa yang menggerakkan sejarah? Invasi Napoleon ke Rusia.",bought:true,store:"Opentrolley",link:"https://opentrolley.co.id/book/9780679405733",price:1371000,photo:null},
+  {id:56,no:56,library:"everyman",priority:5,title:"Wuthering Heights",author:"Emily Bronte",genre:"Gothic Romance / Classics",blurb:"Cinta destruktif Heathcliff dan Catherine melampaui kematian.",bought:true,store:"Shopee",link:"https://shopee.co.id/Wuthering-Heights",price:598000,photo:null}
+  ];
+}
+
+// ── INIT ──
+renderAll();
+setTimeout(()=>{
+  const lb=getLibBooks(currentLib);
+  const pct=lb.length?lb.filter(b=>b.bought).length/lb.length:0;
+  const circ=2*Math.PI*56;
+  $('ringArc').style.strokeDashoffset=circ-(pct*circ);
+},120);
+</script>
+</body>
+</html>

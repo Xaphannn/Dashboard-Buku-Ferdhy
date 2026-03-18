@@ -352,7 +352,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeDetail()">Tutup</button>
       <button class="btn btn-green" id="dToggleBought" onclick="toggleBoughtFromModal()"></button>
-      <button class="btn btn-gold" onclick="openEditFromModal()">Edit ✦</button>
+      <button class="btn btn-danger" onclick="confirmDeleteFromModal()">🗑 Hapus</button>
       <a class="btn btn-link" id="dLink" href="#" target="_blank">Toko ↗</a>
     </div>
   </div>
@@ -902,6 +902,14 @@ function saveEdit(){
 }
 
 // ── DELETE ──
+function confirmDeleteFromModal(){
+  if(modalOpenId === null) return;
+  deletingId = modalOpenId;
+  const b = books.find(x => x.id === deletingId);
+  $('confirmMsg').textContent = `"${b.title}" akan dihapus dari wishlist.`;
+  closeDetail(); // tutup modal
+  $('confirmOverlay').classList.add('open'); // buka konfirmasi
+}
 function confirmDelete(){
   if(!editingId)return;
   const b=books.find(x=>x.id===editingId); deletingId=editingId;

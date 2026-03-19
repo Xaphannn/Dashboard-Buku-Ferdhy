@@ -910,6 +910,12 @@ function initFirebaseSync(){
     const localSaved=parseInt(localStorage.getItem('myLibLastSaved')||'0');
     if((data.lastSaved||0)>localSaved){
       books=data.books||[];
+      // Merge any new default books not in cloud data either
+      const defs=getDefaultBooks();
+      const existingIds=new Set(books.map(b=>b.id));
+      const newBooks=defs.filter(def=>!existingIds.has(def.id));
+      if(newBooks.length>0) books.push(...newBooks);
+      books.sort((a,b2)=>a.id-b2.id);
       nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
       if(data.userBudget!==undefined)userBudget=data.userBudget;
       if(data.balanceHistory)balanceHistory=data.balanceHistory;
@@ -932,12 +938,13 @@ function loadData(){
   if(raw){
     const d=JSON.parse(raw);
     const defs=getDefaultBooks();
+    // Migrate existing books
     d.forEach(b=>{
       if(b.status===undefined){b.status=b.bought?'owned':'wishlist';delete b.bought;}
       if(!b.publisher)b.publisher=b.library==='everyman'?"Everyman's Library":b.library||'';
       if(!b.coverType)b.coverType='HC';
       if(b.coverType==='SC'&&b.publisher?.toLowerCase().includes('everyman'))b.coverType='HC';
-      // Migrate Indonesian condition/readStatus to English
+      // Migrate Indonesian → English
       const condMap={'Segel':'Sealed','Tidak Segel':'Unsealed','Tidak Segel dan Menguning':'Unsealed','Tidak Segel dan Rusak':'Unsealed','Jamur':'Moldy','Rusak':'Damaged'};
       const rsMap={'Sudah Dibaca':'Read','Belum Dibaca':'Unread'};
       if(b.condition&&condMap[b.condition])b.condition=condMap[b.condition];
@@ -946,7 +953,22 @@ function loadData(){
         const def=defs.find(x=>x.id===b.id);
         if(def){if(!b.isbn)b.isbn=def.isbn;if(!b.publisherCountry)b.publisherCountry=def.publisherCountry;}
       }
+      // Update purchase links from defaults
+      if(!b.link||b.link===''){
+        const def=defs.find(x=>x.id===b.id);
+        if(def&&def.link)b.link=def.link;
+      }
     });
+    // MERGE: add any new default books not yet in localStorage
+    const existingIds=new Set(d.map(b=>b.id));
+    const newBooks=defs.filter(def=>!existingIds.has(def.id));
+    if(newBooks.length>0){
+      d.push(...newBooks);
+      // Sort by id to keep order consistent
+      d.sort((a,b2)=>a.id-b2.id);
+      // Save merged data back immediately
+      localStorage.setItem('myLibV5',JSON.stringify(d));
+    }
     return d;
   }
   const v4=localStorage.getItem('myLibV4');

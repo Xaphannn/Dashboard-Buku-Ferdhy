@@ -1813,7 +1813,11 @@ function openDetail(id){
         <optgroup label="E-Wallet"><option ${b.paymentMethod==='GoPay'?'selected':''}>GoPay</option><option ${b.paymentMethod==='OVO'?'selected':''}>OVO</option><option ${b.paymentMethod==='Dana'?'selected':''}>Dana</option><option ${b.paymentMethod==='ShopeePay'?'selected':''}>ShopeePay</option><option ${b.paymentMethod==='LinkAja'?'selected':''}>LinkAja</option><option ${b.paymentMethod==='Blu BCA'?'selected':''}>Blu BCA</option><option ${b.paymentMethod==='Jenius'?'selected':''}>Jenius</option><option ${b.paymentMethod==='E-Wallet Other'?'selected':''}>E-Wallet Other</option></optgroup>
         <optgroup label="Kartu"><option ${b.paymentMethod==='Kartu Kredit'?'selected':''}>Kartu Kredit</option><option ${b.paymentMethod==='Kartu Debit'?'selected':''}>Kartu Debit</option></optgroup>
       </select></div></div>
-    ${b.paymentProof?`<div style="grid-column:1/-1"><div class="meta-key" style="margin-bottom:4px">Payment Proof</div><img src="${b.paymentProof}" style="width:100%;max-height:110px;object-fit:contain;border:1px solid var(--bg-border);cursor:pointer" onclick="window.open(this.src,'_blank')" title="Klik untuk perbesar"></div>`:''}`;
+    ${b.paymentProof?(
+      b.paymentProof.startsWith('data:application/pdf')
+        ?`<div style="grid-column:1/-1"><div class="meta-key" style="margin-bottom:4px">Payment Proof</div><div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--bg-border);background:var(--bg-card2);cursor:pointer" onclick="downloadProofDirect('${b.id}')"><span style="font-size:28px">📄</span><div><div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream)">PDF Payment Proof</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:2px">Click to download</div></div></div></div>`
+        :`<div style="grid-column:1/-1"><div class="meta-key" style="margin-bottom:4px">Payment Proof</div><img src="${b.paymentProof}" style="width:100%;max-height:110px;object-fit:contain;border:1px solid var(--bg-border);cursor:pointer" onclick="window.open(this.src,'_blank')" title="Click to enlarge"></div>`
+    ):''}` ;
   }
   if(!isOwned(b)){
     meta+=`<div><div class="meta-key">ISBN</div><div class="meta-val" style="font-size:15px">${b.isbn||'—'}</div></div>`;
@@ -2555,53 +2559,102 @@ function openLightbox(idx){
 
 function downloadCurrentItem(){
   const item=$('lightbox')._currentItem;
-  if(!item||!item.src){showToast('No file to download','error');return;}
+  if(!item){showToast('No file selected','error');return;}
 
-  // Build clean filename
-  let ext='.jpg';
-  if(item.src.startsWith('data:application/pdf'))ext='.pdf';
-  else if(item.src.startsWith('data:image/png'))ext='.png';
-  else if(item.src.startsWith('data:image/webp'))ext='.webp';
+  // Try item.src first, then look up book paymentProof directly
+  let src=item.src;
+  if(!src&&item.bookId){
+    const b=books.find(x=>x.id===item.bookId);
+    if(b)src=b.paymentProof||b.photo;
+  }
+  if(!src){showToast('No file data found','error');return;}
+
+  // Build filename
+  const isPdf=src.startsWith('data:application/pdf')||src.includes('data:application/pdf');
+  let ext=isPdf?'.pdf':src.startsWith('data:image/png')?'.png':src.startsWith('data:image/webp')?'.webp':'.jpg';
+  const dateStr=item.date?new Date(item.date).toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-'):new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
   const base=item.type==='cover'?`cover_${sanitizeFilename(item.title)}`
-             :item.type==='proof'?`proof_${item.date?(new Date(item.date).toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-')):Date.now()}_${sanitizeFilename(item.title)}`
+             :item.type==='proof'?`proof_${dateStr}_${sanitizeFilename(item.title)}`
              :`photo_${sanitizeFilename(item.title)}`;
   const fname=base+ext;
 
-  if(item.src.startsWith('data:')){
-    // Base64 — convert to blob and download directly
-    const arr=item.src.split(','),mime=arr[0].match(/:(.*?);/)[1];
-    const bstr=atob(arr[1]);let n=bstr.length;
-    const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);
-    const blob=new Blob([u8],{type:mime});
-    triggerDownload(URL.createObjectURL(blob),fname,true);
+  const btn=$('lightboxDownload');
+  const orig=btn.textContent;
+
+  if(src.startsWith('data:')){
+    // Base64 → Blob (chunked to handle large files)
+    try{
+      const parts=src.split(',');
+      const mime=parts[0].match(/:(.*?);/)[1];
+      const b64=parts[1];
+      // Chunked atob to handle large strings safely
+      const chunkSize=8192;
+      const byteArrays=[];
+      for(let offset=0;offset<b64.length;offset+=chunkSize){
+        const chunk=b64.slice(offset,offset+chunkSize);
+        const byteChars=atob(chunk);
+        const byteNums=new Array(byteChars.length);
+        for(let i=0;i<byteChars.length;i++)byteNums[i]=byteChars.charCodeAt(i);
+        byteArrays.push(new Uint8Array(byteNums));
+      }
+      const blob=new Blob(byteArrays,{type:mime});
+      const url=URL.createObjectURL(blob);
+      triggerDownload(url,fname,true);
+      showToast(`✓ Downloaded: ${fname}`,'success');
+    } catch(e){
+      console.error('Base64 decode error:',e);
+      showToast('Download failed — file may be corrupt','error');
+    }
   } else {
-    // External URL (Cloudinary etc) — fetch as blob first, then download
-    const btn=$('lightboxDownload');
-    const orig=btn.textContent;
+    // External URL — fetch as blob
     btn.textContent='⏳ Downloading...';
     showToast('Downloading...','');
-    fetch(item.src)
-      .then(r=>{
-        if(!r.ok)throw new Error('Fetch failed');
-        return r.blob();
-      })
+    fetch(src,{mode:'cors'})
+      .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.blob();})
       .then(blob=>{
-        // Detect real extension from blob type
         let realExt=ext;
-        if(blob.type==='image/png')realExt='.png';
-        else if(blob.type==='image/jpeg'||blob.type==='image/jpg')realExt='.jpg';
-        else if(blob.type==='image/webp')realExt='.webp';
-        else if(blob.type==='application/pdf')realExt='.pdf';
-        const realFname=base+realExt;
-        triggerDownload(URL.createObjectURL(blob),realFname,true);
+        if(blob.type.includes('pdf'))realExt='.pdf';
+        else if(blob.type.includes('png'))realExt='.png';
+        else if(blob.type.includes('webp'))realExt='.webp';
+        else if(blob.type.includes('jpeg')||blob.type.includes('jpg'))realExt='.jpg';
+        triggerDownload(URL.createObjectURL(blob),base+realExt,true);
         btn.textContent=orig;
-        showToast(`✓ Downloaded: ${realFname}`,'success');
+        showToast(`✓ Downloaded: ${base+realExt}`,'success');
       })
       .catch(err=>{
         console.error(err);
         btn.textContent=orig;
-        showToast('Download failed — try right-click → Save As','error');
+        showToast('Download failed','error');
       });
+  }
+}
+
+function downloadProofDirect(bookId){
+  const b=books.find(x=>x.id===parseInt(bookId));
+  if(!b||!b.paymentProof){showToast('No proof file found','error');return;}
+  const src=b.paymentProof;
+  const isPdf=src.startsWith('data:application/pdf');
+  const ext=isPdf?'.pdf':src.startsWith('data:image/png')?'.png':'.jpg';
+  const fname=`proof_${sanitizeFilename(b.title)}${ext}`;
+  if(src.startsWith('data:')){
+    try{
+      const parts=src.split(','),mime=parts[0].match(/:(.*?);/)[1],b64=parts[1];
+      const chunkSize=8192;const byteArrays=[];
+      for(let offset=0;offset<b64.length;offset+=chunkSize){
+        const chunk=b64.slice(offset,offset+chunkSize);
+        const byteChars=atob(chunk);
+        const byteNums=new Array(byteChars.length);
+        for(let i=0;i<byteChars.length;i++)byteNums[i]=byteChars.charCodeAt(i);
+        byteArrays.push(new Uint8Array(byteNums));
+      }
+      const blob=new Blob(byteArrays,{type:mime});
+      triggerDownload(URL.createObjectURL(blob),fname,true);
+      showToast(`✓ Downloaded: ${fname}`,'success');
+    }catch(e){showToast('Download failed','error');}
+  } else {
+    fetch(src,{mode:'cors'}).then(r=>r.blob()).then(blob=>{
+      triggerDownload(URL.createObjectURL(blob),fname,true);
+    }).catch(()=>showToast('Download failed','error'));
   }
 }
 

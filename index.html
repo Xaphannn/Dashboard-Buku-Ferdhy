@@ -2029,62 +2029,85 @@ function registerPhoto(data,type,bookTitle,extraInfo){
 }
 
 // ── BACKGROUND REMOVAL (Canvas-based, covers only) ──
-// Samples corner pixels to determine background color, then floods out matching pixels
 function removeBackground(dataUrl, callback){
   const img=new Image();
+  img.onerror=()=>{ showToast('Gagal proses gambar, disimpan tanpa BG removal','error'); callback(dataUrl); };
   img.onload=()=>{
-    const canvas=document.createElement('canvas');
-    canvas.width=img.width;canvas.height=img.height;
-    const ctx=canvas.getContext('2d');
-    ctx.drawImage(img,0,0);
-    const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-    const data=imageData.data;
-    const w=canvas.width, h=canvas.height;
+    // Step 1: Resize image to max 1200px to keep memory manageable
+    const MAX=1200;
+    let w=img.width, h=img.height;
+    if(w>MAX||h>MAX){
+      const ratio=Math.min(MAX/w,MAX/h);
+      w=Math.round(w*ratio); h=Math.round(h*ratio);
+    }
 
-    // Sample 4 corners + edges to determine background color (most common)
-    const corners=[];
-    const samplePts=[[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[0,Math.floor(h/2)]];
-    samplePts.forEach(([x,y])=>{
-      const i=(y*w+x)*4;
-      corners.push([data[i],data[i+1],data[i+2]]);
-    });
-    // Average corner color
+    const canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,w,h);
+
+    let imageData;
+    try{ imageData=ctx.getImageData(0,0,w,h); }
+    catch(e){ showToast('Tidak bisa proses gambar (CORS)','error'); callback(dataUrl); return; }
+
+    const data=imageData.data;
+
+    // Step 2: Sample corners to find background color
+    const samplePts=[[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[0,Math.floor(h/2)],[Math.floor(w/4),0],[Math.floor(w*3/4),0]];
+    const corners=samplePts.map(([x,y])=>{const i=(y*w+x)*4;return[data[i],data[i+1],data[i+2]];});
     const bgR=Math.round(corners.reduce((s,c)=>s+c[0],0)/corners.length);
     const bgG=Math.round(corners.reduce((s,c)=>s+c[1],0)/corners.length);
     const bgB=Math.round(corners.reduce((s,c)=>s+c[2],0)/corners.length);
 
-    // Tolerance: how different a pixel can be from bg to still be removed
-    // Use larger tolerance for near-white/light backgrounds, smaller for dark
     const brightness=(bgR+bgG+bgB)/3;
-    const tolerance=brightness>180?38:brightness>100?28:18;
-
-    // BFS flood fill from corners
-    const visited=new Uint8Array(w*h);
-    const queue=[];
-    samplePts.forEach(([x,y])=>queue.push(y*w+x));
+    const tolerance=brightness>200?45:brightness>160?35:brightness>100?25:15;
 
     function colorDiff(idx){
       return Math.abs(data[idx*4]-bgR)+Math.abs(data[idx*4+1]-bgG)+Math.abs(data[idx*4+2]-bgB);
     }
 
-    let qi=0;
-    while(qi<queue.length){
-      const pos=queue[qi++];
-      if(visited[pos])continue;
-      visited[pos]=1;
-      if(colorDiff(pos)>tolerance)continue;
-      // Make transparent
-      data[pos*4+3]=0;
-      // Add neighbours
-      const x=pos%w, y=Math.floor(pos/w);
-      if(x>0&&!visited[pos-1])queue.push(pos-1);
-      if(x<w-1&&!visited[pos+1])queue.push(pos+1);
-      if(y>0&&!visited[pos-w])queue.push(pos-w);
-      if(y<h-1&&!visited[pos+w])queue.push(pos+w);
+    // Step 3: BFS flood-fill in async chunks so browser stays responsive
+    const visited=new Uint8Array(w*h);
+    const queue=new Int32Array(w*h*2); // pre-allocated, no dynamic growth
+    let qHead=0, qTail=0;
+
+    samplePts.forEach(([x,y])=>{
+      const pos=y*w+x;
+      if(!visited[pos]){visited[pos]=1;queue[qTail++]=pos;}
+    });
+
+    const CHUNK=40000; // pixels per chunk
+
+    function processChunk(){
+      let processed=0;
+      while(qHead<qTail && processed<CHUNK){
+        const pos=queue[qHead++];
+        if(colorDiff(pos)>tolerance) continue;
+        data[pos*4+3]=0; // transparent
+        processed++;
+        const x=pos%w, y=Math.floor(pos/w);
+        const neighbors=[x>0?pos-1:-1, x<w-1?pos+1:-1, y>0?pos-w:-1, y<h-1?pos+w:-1];
+        for(const n of neighbors){
+          if(n>=0&&!visited[n]){visited[n]=1;queue[qTail++]=n;}
+        }
+      }
+
+      if(qHead<qTail){
+        // More to process — yield to browser, then continue
+        setTimeout(processChunk,0);
+      } else {
+        // Done — write back and return PNG
+        ctx.putImageData(imageData,0,0);
+        try{
+          callback(canvas.toDataURL('image/png'));
+        } catch(e){
+          showToast('Gagal export PNG','error');
+          callback(dataUrl);
+        }
+      }
     }
 
-    ctx.putImageData(imageData,0,0);
-    callback(canvas.toDataURL('image/png'));
+    setTimeout(processChunk,0); // start async
   };
   img.src=dataUrl;
 }

@@ -895,14 +895,8 @@ function scheduleSave(){
 
 function pushToFirebase(){
   if(!firebaseReady){syncPending=true;return;}
-  // Strip base64 photos — store only metadata in Firebase (photos stay in localStorage)
-  const booksLight=books.map(b=>{
-    const c={...b};
-    if(c.photo?.startsWith('data:'))c.photo='__local__';
-    if(c.paymentProof?.startsWith('data:'))c.paymentProof='__local__';
-    return c;
-  });
-  db.ref('library').set({books:booksLight,userBudget,balanceHistory,lastSaved:Date.now()})
+  // Photos are now Firebase Storage URLs, safe to store in Realtime DB
+  db.ref('library').set({books,userBudget,balanceHistory,lastSaved:Date.now()})
     .then(()=>{setSyncStatus('synced');localStorage.setItem('myLibLastSaved',Date.now());})
     .catch(e=>{console.error(e);setSyncStatus('error');});
 }
@@ -915,14 +909,7 @@ function initFirebaseSync(){
     if(!data){pushToFirebase();return;}
     const localSaved=parseInt(localStorage.getItem('myLibLastSaved')||'0');
     if((data.lastSaved||0)>localSaved){
-      // Cloud is newer — update local, preserve photos from localStorage
-      const localBooks=books;
-      books=(data.books||[]).map(cb=>{
-        const lb=localBooks.find(x=>x.id===cb.id);
-        if(lb){if(cb.photo==='__local__')cb.photo=lb.photo||null;if(cb.paymentProof==='__local__')cb.paymentProof=lb.paymentProof||null;}
-        return cb;
-      });
-      if(!books.length)books=localBooks;
+      books=data.books||[];
       nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
       if(data.userBudget!==undefined)userBudget=data.userBudget;
       if(data.balanceHistory)balanceHistory=data.balanceHistory;
@@ -2194,43 +2181,36 @@ let bgRemoveEnabled=true; // toggle for user
 
 function handlePhotoUpload(input,previewId,dataId){
   const file=input.files[0];if(!file)return;
-  if(file.size>5*1024*1024){showToast('Foto terlalu besar (maks 5MB)','error');return;}
+  if(file.size>10*1024*1024){showToast('Foto terlalu besar (maks 10MB)','error');return;}
   const reader=new FileReader();
   reader.onload=e=>{
     const data=e.target.result;
-    // Only remove bg for cover photos (previewId ends with PhotoPreview, not ProofPreview)
+    const path=`covers/${Date.now()}_${sanitizeFilename(($('aTitle')||$('eTitle'))?.value||'book')}`;
     if(bgRemoveEnabled&&previewId.includes('PhotoPreview')&&!previewId.includes('Proof')){
       showToast('⚙ Menghapus background...','');
-      removeBackground(data, result=>{
-        showPhotoPreview(previewId,dataId,result);
-        showToast('✓ Background dihapus','success');
-      });
+      removeBackground(data, result=>showPhotoPreview(previewId,dataId,result,path));
     } else {
-      showPhotoPreview(previewId,dataId,data);
+      showPhotoPreview(previewId,dataId,data,path);
     }
   };
   reader.readAsDataURL(file);
 }
 
 function handlePastePhoto(event,previewId,dataId,areaId,phId){
-  const items=event.clipboardData?.items;
-  if(!items)return;
+  const items=event.clipboardData?.items;if(!items)return;
   for(const item of items){
     if(item.type.startsWith('image/')){
       event.preventDefault();
-      const file=item.getAsFile();
-      if(!file)continue;
+      const file=item.getAsFile();if(!file)continue;
       const reader=new FileReader();
       reader.onload=e=>{
         const data=e.target.result;
+        const path=`covers/${Date.now()}_paste`;
         if(bgRemoveEnabled&&previewId.includes('PhotoPreview')&&!previewId.includes('Proof')){
           showToast('⚙ Menghapus background...','');
-          removeBackground(data, result=>{
-            showPhotoPreview(previewId,dataId,result);
-            showToast('✓ Background dihapus · foto dipaste','success');
-          });
+          removeBackground(data, result=>showPhotoPreview(previewId,dataId,result,path));
         } else {
-          showPhotoPreview(previewId,dataId,data);
+          showPhotoPreview(previewId,dataId,data,path);
           showToast('✓ Gambar dipaste','success');
         }
       };
@@ -2240,34 +2220,94 @@ function handlePastePhoto(event,previewId,dataId,areaId,phId){
   }
 }
 
-function showPhotoPreview(previewId,dataId,data){
+// ── CLOUDINARY PHOTO UPLOAD (gratis, tanpa Firebase Storage) ──
+const CLOUDINARY_CLOUD='dgoc2o5vj';
+const CLOUDINARY_PRESET='Ferdhy';
+
+function uploadToStorage(dataUrl, path, onSuccess, onError){
+  setSyncStatus('saving');
+  showToast('⬆ Mengupload foto...','');
+
+  // Convert base64 to blob
+  const arr=dataUrl.split(','), mime=arr[0].match(/:(.*?);/)[1];
+  const bstr=atob(arr[1]);
+  let n=bstr.length;
+  const u8=new Uint8Array(n);
+  while(n--)u8[n]=bstr.charCodeAt(n);
+  const blob=new Blob([u8],{type:mime});
+
+  // Build filename from path
+  const fname=path.replace(/\//g,'_').replace(/[^a-zA-Z0-9_\-]/g,'');
+
+  const fd=new FormData();
+  fd.append('file',blob,fname+'.jpg');
+  fd.append('upload_preset',CLOUDINARY_PRESET);
+  fd.append('public_id',fname);
+  fd.append('folder','my-library');
+
+  fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,{method:'POST',body:fd})
+    .then(r=>r.json())
+    .then(res=>{
+      if(res.secure_url){
+        setSyncStatus('synced');
+        showToast('✓ Foto tersimpan di cloud','success');
+        onSuccess(res.secure_url);
+      } else {
+        throw new Error(res.error?.message||'Upload gagal');
+      }
+    })
+    .catch(err=>{
+      console.error('Cloudinary error:',err);
+      setSyncStatus('error');
+      showToast('Upload foto gagal: '+err.message,'error');
+      if(onError)onError(err);
+    });
+}
+
+function showPhotoPreview(previewId, dataId, data, uploadPath){
+  // Show preview immediately with base64
   $(previewId).src=data;$(previewId).classList.add('show');$(dataId).value=data;
   const area=$(previewId).closest('.photo-upload-area');
   if(area){area.classList.add('has-photo');const ph=area.querySelector('[id$="PhotoPlaceholder"],[id$="ProofPlaceholder"]');if(ph)ph.style.display='none';}
   const ci=previewId.replace('PhotoPreview','ClearBtn').replace('ProofPreview','ProofClearBtn');
   if($(ci))$(ci).style.display='block';
+
+  // Upload to Firebase Storage in background, then swap base64 → URL
+  if(data.startsWith('data:')&&uploadPath){
+    uploadToStorage(data, uploadPath, url=>{
+      $(previewId).src=url;
+      $(dataId).value=url;
+      showToast('✓ Foto tersimpan di cloud','success');
+    });
+  }
 }
 
 function handleProofUpload(input,previewId,dataId,pfx){
   const file=input.files[0];if(!file)return;
-  if(file.size>5*1024*1024){showToast('File terlalu besar (maks 5MB)','error');return;}
+  if(file.size>10*1024*1024){showToast('File terlalu besar (maks 10MB)','error');return;}
   const reader=new FileReader();
   reader.onload=e=>{
     const data=e.target.result;
+    const titleEl=$(pfx+'Title');
+    const bookTitle=titleEl?titleEl.value.trim():'buku';
+    const buyDate=$(pfx+'BuyDate')?$(pfx+'BuyDate').value:'';
+    const now=buyDate?new Date(buyDate):new Date();
+    const d=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
+    const fname=`bukti_${d}_${sanitizeFilename(bookTitle)}`;
+    const path=`proofs/${fname}_${Date.now()}`;
+    // Show preview immediately
     $(previewId).src=data;$(previewId).classList.add('show');$(dataId).value=data;
     const area=$(previewId).closest('.photo-upload-area');
     if(area){area.classList.add('has-photo');const ph=area.querySelector('[id$="ProofPlaceholder"]');if(ph)ph.style.display='none';}
     const clearBtn=$(pfx+'ProofClearBtn');if(clearBtn)clearBtn.style.display='block';
-    // Get book title for naming
-    const titleEl=$(pfx+'Title');
-    const bookTitle=titleEl?titleEl.value.trim():'';
-    const buyDate=$(pfx+'BuyDate')?$(pfx+'BuyDate').value:'';
-    const now=buyDate?new Date(buyDate):new Date();
-    const d=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
-    const fname=`bukti_${d}_${sanitizeFilename(bookTitle||'buku')}`;
     const nameEl=$(pfx+'ProofName');
-    if(nameEl) nameEl.textContent=`File akan disimpan sebagai: ${fname}.jpg`;
-    registerPhoto(data,'proof',bookTitle||'buku');
+    if(nameEl) nameEl.textContent=`Mengupload: ${fname}...`;
+    // Upload to Storage
+    uploadToStorage(data, path, url=>{
+      $(previewId).src=url;$(dataId).value=url;
+      if(nameEl) nameEl.textContent=`✓ Tersimpan: ${fname}`;
+      registerPhoto(url,'proof',bookTitle);
+    });
   };
   reader.readAsDataURL(file);
 }

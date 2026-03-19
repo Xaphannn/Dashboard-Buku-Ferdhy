@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Library — Koleksi Buku</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root{
   --bg-deep:#0e0a06;--bg-card:#1a120a;--bg-card2:#221810;--bg-border:#3a2a18;
@@ -332,6 +335,10 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
     <p>Arsip Koleksi Pribadi — Buku Pilihan</p>
   </div>
   <div class="hd-right">
+    <div id="syncStatus" style="font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.1em;padding:5px 10px;border:1px solid var(--bg-border);color:var(--txt-dim);display:flex;align-items:center;gap:5px">
+      <span id="syncDot" style="width:6px;height:6px;border-radius:50%;background:var(--txt-dim);display:inline-block;transition:background .3s"></span>
+      <span id="syncText">Menghubungkan...</span>
+    </div>
     <button class="hd-btn" id="bgRemoveBtn" onclick="toggleBgRemove()" title="Auto hapus background foto sampul" style="font-size:8px">✂ BG Remove: ON</button>
     <button class="hd-btn" id="editToggleBtn" onclick="toggleEditPanel()">✦ Tambah / Edit</button>
   </div>
@@ -860,26 +867,92 @@ function starsHtml(r){return[1,2,3,4,5].map(i=>`<button class="star-btn ${i<=(r|
 function condClass(c){return c==='Segel'?'cond-segel':c==='Tidak Segel'?'cond-tsbuka':c==='Jamur'?'cond-jamur':'cond-rusak'}
 
 // ═══════════════════════════════════════════════════════
-// DATA
+// FIREBASE INIT + REALTIME SYNC
+// ═══════════════════════════════════════════════════════
+const firebaseConfig={
+  apiKey:"AIzaSyBB0vpBgQwBaU2skJWSE_YyoQmTqH_0ImU",
+  authDomain:"dashboard-buku-ferdhy-ramadan.firebaseapp.com",
+  databaseURL:"https://dashboard-buku-ferdhy-ramadan-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"dashboard-buku-ferdhy-ramadan",
+  storageBucket:"dashboard-buku-ferdhy-ramadan.firebasestorage.app",
+  messagingSenderId:"974155579241",
+  appId:"1:974155579241:web:a3fb210221156b0fd047f8"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+let firebaseReady=false,syncPending=false,syncTimer=null;
+
+function setSyncStatus(state){
+  const dot=$('syncDot'),txt=$('syncText');if(!dot||!txt)return;
+  const S={connecting:{c:'var(--txt-dim)',t:'Menghubungkan...'},synced:{c:'var(--green-lt)',t:'✓ Tersimpan'},saving:{c:'var(--orange)',t:'Menyimpan...'},offline:{c:'var(--red)',t:'Offline'},error:{c:'var(--red)',t:'Gagal sync'}};
+  const s=S[state]||S.connecting;dot.style.background=s.c;txt.textContent=s.t;
+}
+
+function scheduleSave(){
+  setSyncStatus('saving');clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>pushToFirebase(),800);
+}
+
+function pushToFirebase(){
+  if(!firebaseReady){syncPending=true;return;}
+  // Strip base64 photos — store only metadata in Firebase (photos stay in localStorage)
+  const booksLight=books.map(b=>{
+    const c={...b};
+    if(c.photo?.startsWith('data:'))c.photo='__local__';
+    if(c.paymentProof?.startsWith('data:'))c.paymentProof='__local__';
+    return c;
+  });
+  db.ref('library').set({books:booksLight,userBudget,balanceHistory,lastSaved:Date.now()})
+    .then(()=>{setSyncStatus('synced');localStorage.setItem('myLibLastSaved',Date.now());})
+    .catch(e=>{console.error(e);setSyncStatus('error');});
+}
+
+function initFirebaseSync(){
+  setSyncStatus('connecting');
+  db.ref('library').on('value',snap=>{
+    firebaseReady=true;
+    const data=snap.val();
+    if(!data){pushToFirebase();return;}
+    const localSaved=parseInt(localStorage.getItem('myLibLastSaved')||'0');
+    if((data.lastSaved||0)>localSaved){
+      // Cloud is newer — update local, preserve photos from localStorage
+      const localBooks=books;
+      books=(data.books||[]).map(cb=>{
+        const lb=localBooks.find(x=>x.id===cb.id);
+        if(lb){if(cb.photo==='__local__')cb.photo=lb.photo||null;if(cb.paymentProof==='__local__')cb.paymentProof=lb.paymentProof||null;}
+        return cb;
+      });
+      if(!books.length)books=localBooks;
+      nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
+      if(data.userBudget!==undefined)userBudget=data.userBudget;
+      if(data.balanceHistory)balanceHistory=data.balanceHistory;
+      localStorage.setItem('myLibV5',JSON.stringify(books));
+      localStorage.setItem('myLibBudget',String(userBudget));
+      localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));
+      localStorage.setItem('myLibLastSaved',data.lastSaved);
+      renderAll();showToast('✓ Disinkronkan dari cloud','success');
+    }
+    setSyncStatus('synced');
+    if(syncPending){syncPending=false;pushToFirebase();}
+  },err=>{console.error(err);setSyncStatus('offline');firebaseReady=true;});
+}
+
+// ═══════════════════════════════════════════════════════
+// DATA (localStorage primary, Firebase secondary)
 // ═══════════════════════════════════════════════════════
 function loadData(){
   const raw=localStorage.getItem('myLibV5');
   if(raw){
     const d=JSON.parse(raw);
+    const defs=getDefaultBooks();
     d.forEach(b=>{
       if(b.status===undefined){b.status=b.bought?'owned':'wishlist';delete b.bought;}
       if(!b.publisher)b.publisher=b.library==='everyman'?"Everyman's Library":b.library||'';
       if(!b.coverType)b.coverType='HC';
-    });
-    // Migrate SC→HC (all Everyman's are HC)
-    d.forEach(b=>{
-      if(b.coverType==='SC'&&b.publisher&&b.publisher.toLowerCase().includes('everyman'))b.coverType='HC';
-    });
-    const defs=getDefaultBooks();
-    d.forEach(b=>{
+      if(b.coverType==='SC'&&b.publisher?.toLowerCase().includes('everyman'))b.coverType='HC';
       if(!b.isbn||!b.publisherCountry){
         const def=defs.find(x=>x.id===b.id);
-        if(def){if(!b.isbn&&def.isbn)b.isbn=def.isbn;if(!b.publisherCountry&&def.publisherCountry)b.publisherCountry=def.publisherCountry;}
+        if(def){if(!b.isbn)b.isbn=def.isbn;if(!b.publisherCountry)b.publisherCountry=def.publisherCountry;}
       }
     });
     return d;
@@ -888,7 +961,10 @@ function loadData(){
   if(v4){const d=JSON.parse(v4);d.forEach(b=>{if(!b.coverType)b.coverType='HC';});return d;}
   return getDefaultBooks();
 }
-function saveData(){localStorage.setItem('myLibV5',JSON.stringify(books))}
+function saveData(){
+  localStorage.setItem('myLibV5',JSON.stringify(books));
+  scheduleSave(); // push to Firebase (debounced)
+}
 
 let books=loadData();
 let nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
@@ -1389,6 +1465,7 @@ function saveBudgetWithTimestamp(){
   if(balanceHistory.length>50)balanceHistory.pop();
   localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));
   $('budgetInput').value='';
+  scheduleSave();
   renderAll();
   showToast(`✓ +${fmt(val)} ditambahkan — Saldo: ${fmt(userBudget)}`,'success');
 }
@@ -1397,6 +1474,7 @@ function resetBudget(){
   userBudget=0;balanceHistory=[];
   localStorage.setItem('myLibBudget','0');
   localStorage.setItem('myLibBalanceHistory','[]');
+  scheduleSave();
   renderAll();showToast('Saldo direset');
 }
 function saveBudget(){saveBudgetWithTimestamp();}
@@ -2593,6 +2671,7 @@ function getDefaultBooks(){
 // INIT
 // ═══════════════════════════════════════════════════════
 renderAll();
+initFirebaseSync(); // Start realtime sync with Firebase
 </script>
 </body>
 </html>

@@ -332,6 +332,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
     <p>Arsip Koleksi Pribadi — Buku Pilihan</p>
   </div>
   <div class="hd-right">
+    <button class="hd-btn" id="bgRemoveBtn" onclick="toggleBgRemove()" title="Auto hapus background foto sampul" style="font-size:8px">✂ BG Remove: ON</button>
     <button class="hd-btn" id="editToggleBtn" onclick="toggleEditPanel()">✦ Tambah / Edit</button>
   </div>
 </header>
@@ -1532,7 +1533,7 @@ function renderFinance(){
   // Monthly spend chart
   const monthly={};
   owned.forEach(b=>{if(b.buyDate){const d=new Date(b.buyDate);const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;monthly[k]=(monthly[k]||0)+b.price;}});
-  const mk=Object.keys(monthly).sort().slice(-8);
+  const mk=Object.keys(monthly).sort().slice(-8).reverse(); // newest first (top)
   const mm=mk.length?Math.max(...mk.map(k=>monthly[k])):1;
   $('monthlyChart').innerHTML=mk.length?mk.map(k=>{
     const[yr,mo]=k.split('-');const lb=new Date(yr,mo-1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
@@ -1981,7 +1982,16 @@ function onEditReadStatusChange(){
   $('eRating').style.cursor=isRead?'pointer':'not-allowed';
   if(!isRead)$('eRating').value='0';
 }
-function toggleEditPanel(){const p=$('editPanel');if(p.classList.contains('open'))closeEditPanel();else openEditPanel(null);}
+function toggleBgRemove(){
+  bgRemoveEnabled=!bgRemoveEnabled;
+  const btn=$('bgRemoveBtn');
+  if(btn){
+    btn.textContent=`✂ BG Remove: ${bgRemoveEnabled?'ON':'OFF'}`;
+    btn.style.color=bgRemoveEnabled?'var(--green-lt)':'var(--txt-muted)';
+    btn.style.borderColor=bgRemoveEnabled?'rgba(74,122,58,.5)':'var(--gold-mut)';
+  }
+  showToast(`Auto BG Remove ${bgRemoveEnabled?'aktif':'nonaktif'}`,'');
+}
 function openEditPanel(id){
   editingId=id;$('editPanel').classList.add('open');$('editToggleBtn').classList.add('active');
   if(id){switchEpTab('edit');loadEditForm(id);}else switchEpTab('add');
@@ -2018,13 +2028,85 @@ function registerPhoto(data,type,bookTitle,extraInfo){
   return filename;
 }
 
+// ── BACKGROUND REMOVAL (Canvas-based, covers only) ──
+// Samples corner pixels to determine background color, then floods out matching pixels
+function removeBackground(dataUrl, callback){
+  const img=new Image();
+  img.onload=()=>{
+    const canvas=document.createElement('canvas');
+    canvas.width=img.width;canvas.height=img.height;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0);
+    const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data=imageData.data;
+    const w=canvas.width, h=canvas.height;
+
+    // Sample 4 corners + edges to determine background color (most common)
+    const corners=[];
+    const samplePts=[[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[0,Math.floor(h/2)]];
+    samplePts.forEach(([x,y])=>{
+      const i=(y*w+x)*4;
+      corners.push([data[i],data[i+1],data[i+2]]);
+    });
+    // Average corner color
+    const bgR=Math.round(corners.reduce((s,c)=>s+c[0],0)/corners.length);
+    const bgG=Math.round(corners.reduce((s,c)=>s+c[1],0)/corners.length);
+    const bgB=Math.round(corners.reduce((s,c)=>s+c[2],0)/corners.length);
+
+    // Tolerance: how different a pixel can be from bg to still be removed
+    // Use larger tolerance for near-white/light backgrounds, smaller for dark
+    const brightness=(bgR+bgG+bgB)/3;
+    const tolerance=brightness>180?38:brightness>100?28:18;
+
+    // BFS flood fill from corners
+    const visited=new Uint8Array(w*h);
+    const queue=[];
+    samplePts.forEach(([x,y])=>queue.push(y*w+x));
+
+    function colorDiff(idx){
+      return Math.abs(data[idx*4]-bgR)+Math.abs(data[idx*4+1]-bgG)+Math.abs(data[idx*4+2]-bgB);
+    }
+
+    let qi=0;
+    while(qi<queue.length){
+      const pos=queue[qi++];
+      if(visited[pos])continue;
+      visited[pos]=1;
+      if(colorDiff(pos)>tolerance)continue;
+      // Make transparent
+      data[pos*4+3]=0;
+      // Add neighbours
+      const x=pos%w, y=Math.floor(pos/w);
+      if(x>0&&!visited[pos-1])queue.push(pos-1);
+      if(x<w-1&&!visited[pos+1])queue.push(pos+1);
+      if(y>0&&!visited[pos-w])queue.push(pos-w);
+      if(y<h-1&&!visited[pos+w])queue.push(pos+w);
+    }
+
+    ctx.putImageData(imageData,0,0);
+    callback(canvas.toDataURL('image/png'));
+  };
+  img.src=dataUrl;
+}
+
+let bgRemoveEnabled=true; // toggle for user
+
 function handlePhotoUpload(input,previewId,dataId){
   const file=input.files[0];if(!file)return;
   if(file.size>5*1024*1024){showToast('Foto terlalu besar (maks 5MB)','error');return;}
   const reader=new FileReader();
   reader.onload=e=>{
     const data=e.target.result;
-    showPhotoPreview(previewId,dataId,data);
+    // Only remove bg for cover photos (previewId ends with PhotoPreview, not ProofPreview)
+    if(bgRemoveEnabled&&previewId.includes('PhotoPreview')&&!previewId.includes('Proof')){
+      showToast('⚙ Menghapus background...','');
+      removeBackground(data, result=>{
+        showPhotoPreview(previewId,dataId,result);
+        showToast('✓ Background dihapus','success');
+      });
+    } else {
+      showPhotoPreview(previewId,dataId,data);
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -2038,9 +2120,20 @@ function handlePastePhoto(event,previewId,dataId,areaId,phId){
       const file=item.getAsFile();
       if(!file)continue;
       const reader=new FileReader();
-      reader.onload=e=>showPhotoPreview(previewId,dataId,e.target.result);
+      reader.onload=e=>{
+        const data=e.target.result;
+        if(bgRemoveEnabled&&previewId.includes('PhotoPreview')&&!previewId.includes('Proof')){
+          showToast('⚙ Menghapus background...','');
+          removeBackground(data, result=>{
+            showPhotoPreview(previewId,dataId,result);
+            showToast('✓ Background dihapus · foto dipaste','success');
+          });
+        } else {
+          showPhotoPreview(previewId,dataId,data);
+          showToast('✓ Gambar dipaste','success');
+        }
+      };
       reader.readAsDataURL(file);
-      showToast('✓ Gambar dipaste','success');
       return;
     }
   }

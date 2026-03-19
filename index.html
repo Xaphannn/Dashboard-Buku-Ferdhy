@@ -536,7 +536,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
         <input class="form-input" id="guDate" type="date">
       </div>
       <div class="photo-upload-area" id="guPhotoArea" tabindex="0" onpaste="handlePasteGallery(event)" style="margin-bottom:8px">
-        <input type="file" accept="image/*" multiple onchange="handleGalleryFileUpload(this)">
+        <input type="file" accept="image/*,.pdf" multiple onchange="handleGalleryFileUpload(this)">
         <img class="photo-preview" id="guPhotoPreview" src="" alt="">
         <div id="guPhotoPlaceholder">
           <div class="photo-upload-icon">🖼️</div>
@@ -564,7 +564,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
     <div class="lightbox-meta" id="lightboxMeta"></div>
   </div>
   <div class="lightbox-actions">
-    <a id="lightboxDownload" class="btn btn-gold" style="text-decoration:none" download>⬇ Download</a>
+    <a id="lightboxDownload" class="btn btn-gold" style="text-decoration:none;cursor:pointer" onclick="downloadCurrentItem()">⬇ Download</a>
     <button class="btn btn-danger" onclick="deleteGalleryItem()">🗑 Delete</button>
   </div>
 </div>
@@ -698,7 +698,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
         <div class="form-divider"></div>
         <div class="fsec-title">Payment Proof <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(optional)</span></div>
         <div class="photo-upload-area" id="aProofArea" style="margin-bottom:8px">
-          <input type="file" accept="image/*" onchange="handleProofUpload(this,'aProofPreview','aProofData','a')">
+          <input type="file" accept="image/*" onchange="handleProofUpload(this,'aProofPreview','aProofData','a')" accept="image/*,.pdf">
           <img class="photo-preview" id="aProofPreview" src="" alt="">
           <div id="aProofPlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Payment Proof</div><div class="photo-upload-sub">Click, drag, or paste image (Ctrl+V)</div></div>
         </div>
@@ -824,7 +824,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
           <div class="form-divider"></div>
           <div class="fsec-title">Payment Proof <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(optional)</span></div>
           <div class="photo-upload-area" id="eProofArea" style="margin-bottom:8px">
-            <input type="file" accept="image/*" onchange="handleProofUpload(this,'eProofPreview','eProofData','e')">
+            <input type="file" accept="image/*" onchange="handleProofUpload(this,'eProofPreview','eProofData','e')" accept="image/*,.pdf">
             <img class="photo-preview" id="eProofPreview" src="" alt="">
             <div id="eProofPlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Payment Proof</div><div class="photo-upload-sub">Click, drag, or paste image (Ctrl+V)</div></div>
           </div>
@@ -2311,30 +2311,58 @@ function showPhotoPreview(previewId, dataId, data, uploadPath){
 
 function handleProofUpload(input,previewId,dataId,pfx){
   const file=input.files[0];if(!file)return;
-  if(file.size>10*1024*1024){showToast('File terlalu besar (maks 10MB)','error');return;}
+  if(file.size>20*1024*1024){showToast('File too large (max 20MB)','error');return;}
+  const isPdf=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
   const reader=new FileReader();
   reader.onload=e=>{
     const data=e.target.result;
     const titleEl=$(pfx+'Title');
-    const bookTitle=titleEl?titleEl.value.trim():'books';
+    const bookTitle=titleEl?titleEl.value.trim():'book';
     const buyDate=$(pfx+'BuyDate')?$(pfx+'BuyDate').value:'';
     const now=buyDate?new Date(buyDate):new Date();
     const d=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
-    const fname=`bukti_${d}_${sanitizeFilename(bookTitle)}`;
-    const path=`proofs/${fname}_${Date.now()}`;
-    // Show preview immediately
-    $(previewId).src=data;$(previewId).classList.add('show');$(dataId).value=data;
-    const area=$(previewId).closest('.photo-upload-area');
-    if(area){area.classList.add('has-photo');const ph=area.querySelector('[id$="ProofPlaceholder"]');if(ph)ph.style.display='none';}
-    const clearBtn=$(pfx+'ProofClearBtn');if(clearBtn)clearBtn.style.display='block';
-    const nameEl=$(pfx+'ProofName');
-    if(nameEl) nameEl.textContent=`Mengupload: ${fname}...`;
-    // Upload to Storage
-    uploadToStorage(data, path, url=>{
-      $(previewId).src=url;$(dataId).value=url;
-      if(nameEl) nameEl.textContent=`✓ Saved: ${fname}`;
-      registerPhoto(url,'proof',bookTitle);
-    });
+    const ext=isPdf?'.pdf':'.jpg';
+    const fname=`proof_${d}_${sanitizeFilename(bookTitle)}${ext}`;
+    const previewEl=$(previewId);
+    const area=previewEl?.closest('.photo-upload-area')||$(pfx+'ProofArea');
+    const ph=$(pfx+'ProofPlaceholder');
+    if(isPdf){
+      // Show PDF badge instead of image preview
+      if(previewEl){previewEl.style.display='none';}
+      if(area){
+        area.classList.add('has-photo');
+        let pdfBadge=area.querySelector('.pdf-preview-badge');
+        if(!pdfBadge){
+          pdfBadge=document.createElement('div');
+          pdfBadge.className='pdf-preview-badge';
+          pdfBadge.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 10px;';
+          area.appendChild(pdfBadge);
+        }
+        pdfBadge.innerHTML=`<div style="font-size:40px">📄</div><div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.1em;color:var(--cream);margin-top:8px;text-align:center;word-break:break-all">${file.name}</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:4px">PDF · ${(file.size/1024).toFixed(0)}KB</div>`;
+      }
+      if(ph)ph.style.display='none';
+      $(dataId).value=data;
+      const clearBtn=$(pfx+'ProofClearBtn');if(clearBtn)clearBtn.style.display='block';
+      const nameEl=$(pfx+'ProofName');
+      if(nameEl)nameEl.textContent=`✓ PDF ready: ${fname}`;
+      registerPhoto(data,'proof',bookTitle);
+      showToast(`✓ PDF attached: ${file.name}`,'success');
+    } else {
+      // Image: show preview and upload to Cloudinary
+      if(previewEl){previewEl.src=data;previewEl.classList.add('show');previewEl.style.display='';}
+      if(area){area.classList.add('has-photo');if(ph)ph.style.display='none';}
+      $(dataId).value=data;
+      const clearBtn=$(pfx+'ProofClearBtn');if(clearBtn)clearBtn.style.display='block';
+      const nameEl=$(pfx+'ProofName');
+      if(nameEl)nameEl.textContent=`Uploading: ${fname}...`;
+      const path=`proofs/proof_${d}_${sanitizeFilename(bookTitle)}_${Date.now()}`;
+      uploadToStorage(data, path, url=>{
+        if(previewEl)previewEl.src=url;
+        $(dataId).value=url;
+        if(nameEl)nameEl.textContent=`✓ Saved: ${fname}`;
+        registerPhoto(url,'proof',bookTitle);
+      });
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -2473,46 +2501,116 @@ function renderGallery(){
     return;
   }
 
-  const typeLabelMap={cover:'Sampul',proof:'Payment Proof',other:'Foto'};
-  $('galleryCards').innerHTML=items.map((item,idx)=>`
-    <div class="gallery-card" onclick="openLightbox(${idx})">
-      <div class="gallery-type-badge gallery-type-${item.type==='proof'?'proof':'cover'}">${typeLabelMap[item.type]||'Foto'}</div>
-      <img class="gallery-card-img ${item.type==='proof'?'proof-img':''}" 
-           src="${item.src}" 
-           alt="${item.title}" 
-           loading="lazy"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <div style="display:none;width:100%;aspect-ratio:3/4;background:var(--bg-card2);align-items:center;justify-content:center;font-size:32px">
-        ${item.type==='proof'?'🧾':'📖'}
-      </div>
+  const typeLabelMap={cover:'Cover',proof:'Payment Proof',other:'Photo'};
+  $('galleryCards').innerHTML=items.map((item,idx)=>{
+    const isPdf=item.src&&(item.src.startsWith('data:application/pdf'));
+    return`<div class="gallery-card" onclick="openLightbox(${idx})">
+      <div class="gallery-type-badge gallery-type-${item.type==='proof'?'proof':'cover'}">${typeLabelMap[item.type]||'Photo'}${isPdf?' · PDF':''}</div>
+      ${isPdf
+        ?`<div style="width:100%;aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-card2)"><div style="font-size:48px">📄</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-muted);margin-top:8px;letter-spacing:.06em">PDF</div></div>`
+        :`<img class="gallery-card-img ${item.type==='proof'?'proof-img':''}" src="${item.src}" alt="${item.title}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="display:none;width:100%;aspect-ratio:3/4;background:var(--bg-card2);align-items:center;justify-content:center;font-size:32px">${item.type==='proof'?'🧾':'📖'}</div>`
+      }
       <div class="gallery-card-overlay">
-        <span style="font-size:24px">${item.type==='proof'?'🧾':'📷'}</span>
-        <span style="font-family:'Cinzel',serif;font-size:12px;color:var(--cream);letter-spacing:.1em">LIHAT</span>
+        <span style="font-size:24px">${isPdf?'📄':item.type==='proof'?'📷':'📷'}</span>
+        <span style="font-family:'Cinzel',serif;font-size:8px;color:var(--cream);letter-spacing:.1em">VIEW</span>
       </div>
       <div class="gallery-card-info">
         <div class="gallery-card-title">${item.title}</div>
         <div class="gallery-card-sub">${item.subtitle||'—'}</div>
       </div>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 
 // ── LIGHTBOX ──
 function openLightbox(idx){
   lightboxIndex=idx;
   const item=lightboxItems[idx];if(!item)return;
-  $('lightboxImg').src=item.src;
+
+  const isPdf=item.src&&item.src.startsWith('data:application/pdf');
+  const imgEl=$('lightboxImg');
+
+  if(isPdf){
+    imgEl.style.display='none';
+    let pdfView=document.getElementById('lightboxPdfView');
+    if(!pdfView){
+      pdfView=document.createElement('div');
+      pdfView.id='lightboxPdfView';
+      pdfView.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--cream)';
+      imgEl.parentNode.insertBefore(pdfView,imgEl);
+    }
+    pdfView.style.display='flex';
+    pdfView.innerHTML=`<div style="font-size:80px">📄</div><div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.1em;margin-top:16px;color:var(--cream)">${item.title}</div><div style="font-family:'Cinzel',serif;font-size:9px;color:var(--txt-dim);margin-top:6px">PDF File</div>`;
+  } else {
+    imgEl.style.display='';
+    imgEl.src=item.src;
+    const pdfView=document.getElementById('lightboxPdfView');
+    if(pdfView)pdfView.style.display='none';
+  }
+
   $('lightboxTitle').textContent=item.title;
   $('lightboxMeta').textContent=item.subtitle||'';
-  const dl=$('lightboxDownload');
-  dl.href=item.src;
-  // Build download filename
-  const ext=item.src.startsWith('data:image/png')?'.png':'.jpg';
-  const fname=item.type==='cover'?`cover_${sanitizeFilename(item.title)}${ext}`
-              :item.type==='proof'?`bukti_${item.date?item.date.replace(/-/g,''):Date.now()}_${sanitizeFilename(item.title)}${ext}`
-              :`foto_${sanitizeFilename(item.title)}${ext}`;
-  dl.download=fname;
   $('lightbox').classList.add('open');
   $('lightbox')._currentItem=item;
+}
+
+function downloadCurrentItem(){
+  const item=$('lightbox')._currentItem;
+  if(!item||!item.src){showToast('No file to download','error');return;}
+
+  // Build clean filename
+  let ext='.jpg';
+  if(item.src.startsWith('data:application/pdf'))ext='.pdf';
+  else if(item.src.startsWith('data:image/png'))ext='.png';
+  else if(item.src.startsWith('data:image/webp'))ext='.webp';
+  const base=item.type==='cover'?`cover_${sanitizeFilename(item.title)}`
+             :item.type==='proof'?`proof_${item.date?(new Date(item.date).toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-')):Date.now()}_${sanitizeFilename(item.title)}`
+             :`photo_${sanitizeFilename(item.title)}`;
+  const fname=base+ext;
+
+  if(item.src.startsWith('data:')){
+    // Base64 — convert to blob and download directly
+    const arr=item.src.split(','),mime=arr[0].match(/:(.*?);/)[1];
+    const bstr=atob(arr[1]);let n=bstr.length;
+    const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);
+    const blob=new Blob([u8],{type:mime});
+    triggerDownload(URL.createObjectURL(blob),fname,true);
+  } else {
+    // External URL (Cloudinary etc) — fetch as blob first, then download
+    const btn=$('lightboxDownload');
+    const orig=btn.textContent;
+    btn.textContent='⏳ Downloading...';
+    showToast('Downloading...','');
+    fetch(item.src)
+      .then(r=>{
+        if(!r.ok)throw new Error('Fetch failed');
+        return r.blob();
+      })
+      .then(blob=>{
+        // Detect real extension from blob type
+        let realExt=ext;
+        if(blob.type==='image/png')realExt='.png';
+        else if(blob.type==='image/jpeg'||blob.type==='image/jpg')realExt='.jpg';
+        else if(blob.type==='image/webp')realExt='.webp';
+        else if(blob.type==='application/pdf')realExt='.pdf';
+        const realFname=base+realExt;
+        triggerDownload(URL.createObjectURL(blob),realFname,true);
+        btn.textContent=orig;
+        showToast(`✓ Downloaded: ${realFname}`,'success');
+      })
+      .catch(err=>{
+        console.error(err);
+        btn.textContent=orig;
+        showToast('Download failed — try right-click → Save As','error');
+      });
+  }
+}
+
+function triggerDownload(url,filename,revoke=false){
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  if(revoke)setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 function closeLightbox(){$('lightbox').classList.remove('open');}
 function lightboxNav(dir){

@@ -10,11 +10,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root{
-  --bg-deep:#0e0a06;--bg-card:#1a120a;--bg-card2:#221810;--bg-border:#3a2a18;
-  --gold:#d4a847;--gold-mut:#9a7830;--gold-pale:#f0dca0;--cream:#e8d5b0;
-  --brown-lt:#c49a60;--txt-muted:#c4a878;--txt-dim:#8a6848;
-  --green-dk:#1a2e18;--green-lt:#7ab86a;--blue-lt:#6a9ab8;--blue-mid:#2a4a6e;
-  --orange:#c87840;--red:#c06060;
+  --bg-deep:#0a0a0a;--bg-card:#111008;--bg-card2:#181408;--bg-border:#3a3020;
+  --gold:#d4a030;--gold-mut:#a07828;--gold-pale:#eedfa8;--cream:#eedfa8;
+  --brown-lt:#c8a848;--txt-muted:#c8b868;--txt-dim:#a08848;
+  --green-dk:#0e2010;--green-lt:#70c870;--blue-lt:#6a98b8;--blue-mid:#1e3a5e;
+  --orange:#c87030;--red:#c05858;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg-deep);color:var(--cream);font-family:'EB Garamond',serif;font-size:16px;line-height:1.65;min-height:100vh}
@@ -120,6 +120,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
 .cover-badge{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.06em;padding:2px 6px;border:1px solid;display:inline-block;margin-left:3px}
 .hc-badge{color:var(--gold-pale);border-color:rgba(212,168,71,.4);background:rgba(212,168,71,.06)}
 .sc-badge{color:var(--blue-lt);border-color:rgba(106,154,184,.4);background:rgba(42,74,110,.12)}
+.se-badge{color:#b890d8;border-color:rgba(154,112,184,.4);background:rgba(154,112,184,.08)}
 .drag-handle{cursor:grab;color:var(--txt-dim);font-size:13px;padding:0 3px;user-select:none;opacity:.35;transition:opacity .15s;line-height:1}
 .drag-handle:hover{opacity:1}
 .cond-badge{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.06em;padding:3px 8px;border:1px solid}
@@ -169,7 +170,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
 .finance-grid{padding:22px 32px}
 .fin-section-title{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:12px;margin-top:22px;padding-bottom:5px;border-bottom:1px solid var(--bg-border);display:flex;align-items:center;gap:10px}
 .fin-section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--bg-border),transparent)}
-.fin-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bg-border);margin-bottom:1px}
+.fin-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--bg-border);margin-bottom:1px}
 .fin-card{background:var(--bg-card);padding:14px 16px}
 .fin-label{font-family:'Cinzel',serif;font-size:7px;letter-spacing:.13em;color:var(--txt-muted);margin-bottom:3px}
 .fin-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--gold)}
@@ -529,7 +530,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
       </div>
       <div class="form-group">
         <label class="form-label">Name / Description</label>
-        <input class="form-input" id="guTitle" placeholder="cth: judul books, atau keterangan invoice...">
+        <input class="form-input" id="guTitle" placeholder="e.g. book title, or invoice description...">
       </div>
       <div class="form-group">
         <label class="form-label">Date</label>
@@ -612,7 +613,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
     <!-- ADD -->
     <div id="epAddPanel">
       <div class="fsec-title">Book Information</div>
-      <div class="form-group"><label class="form-label">Book Title *</label><input class="form-input" id="aTitle" placeholder="Judul books..."></div>
+      <div class="form-group"><label class="form-label">Book Title *</label><input class="form-input" id="aTitle" placeholder="Book title..."></div>
       <div class="form-group"><label class="form-label">Author *</label><input class="form-input" id="aAuthor" placeholder="Nama penulis..."></div>
       <div class="form-group"><label class="form-label">Publisher</label><input class="form-input" id="aPublisher" placeholder="cth: Everyman's Library, Gramedia..."></div>
       <div class="form-row">
@@ -626,7 +627,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
       <div class="form-row">
         <div class="form-group"><label class="form-label">Price (Rp)</label><input class="form-input" id="aPrice" type="number" placeholder="350000"></div>
         <div class="form-group"><label class="form-label">Cover Type Type</label>
-          <select class="form-select" id="aCover TypeType"><option value="HC">Hardcover (HC)</option><option value="SC">Softcover (SC)</option></select>
+          <select class="form-select" id="aCoverType"><option value="HC">Hardcover (HC)</option><option value="SC">Softcover (SC)</option><option value="HC-SE">HC Sprayed Edges</option><option value="SC-SE">SC Sprayed Edges</option></select>
         </div>
       </div>
       <div class="form-row">
@@ -741,7 +742,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
         <div class="form-row">
           <div class="form-group"><label class="form-label">Price (Rp)</label><input class="form-input" id="ePrice" type="number"></div>
           <div class="form-group"><label class="form-label">Cover Type Type</label>
-            <select class="form-select" id="eCover TypeType"><option value="HC">Hardcover (HC)</option><option value="SC">Softcover (SC)</option></select>
+            <select class="form-select" id="eCoverType"><option value="HC">Hardcover (HC)</option><option value="SC">Softcover (SC)</option><option value="HC-SE">HC Sprayed Edges</option><option value="SC-SE">SC Sprayed Edges</option></select>
           </div>
         </div>
         <div class="form-row">
@@ -861,8 +862,8 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
 const $ = id => document.getElementById(id);
 function fmt(n){return'Rp'+Number(n||0).toLocaleString('id-ID')}
 function fmtS(n){if(n>=1000000)return'Rp'+(n/1000000).toFixed(1)+'Jt';if(n>=1000)return'Rp'+(n/1000).toFixed(0)+'Rb';return fmt(n)}
-function priceTier(p){return p<200000?'cheap':p<=1000000?'normal':'expensive'}
-function priceTierLabel(p){return p<200000?'Murah (<200k)':p<=1000000?'Normal (200k–1Jt)':'Mahal (>1Jt)'}
+function priceTier(p){return p<200000?'cheap':p<=500000?'normal':'expensive'}
+function priceTierLabel(p){return p<200000?'Budget (<200k)':p<=500000?'Normal (200k–500k)':'Expensive (>500k)'}
 function starsHtml(r){return[1,2,3,4,5].map(i=>`<button class="star-btn ${i<=(r||0)?'lit':''}" onclick="updateFieldModal(${r},'rating',${i},'${r}')">★</button>`).join('')}
 function condClass(c){return c==='Sealed'?'cond-segel':c==='Unsealed'?'cond-tsbuka':c==='Moldy'?'cond-jamur':'cond-rusak'}
 
@@ -893,12 +894,38 @@ function scheduleSave(){
   syncTimer=setTimeout(()=>pushToFirebase(),800);
 }
 
+function saveData(){
+  // Save to localStorage — strip large base64 if quota exceeded
+  try{
+    localStorage.setItem('myLibV5',JSON.stringify(books));
+  } catch(e){
+    // QuotaExceededError — save without photo data
+    console.warn('localStorage quota exceeded, saving without photos');
+    const slim=books.map(b=>{
+      const c={...b};
+      if(c.photo&&c.photo.startsWith('data:'))c.photo=null;
+      if(c.paymentProof&&c.paymentProof.startsWith('data:'))c.paymentProof=null;
+      return c;
+    });
+    try{localStorage.setItem('myLibV5',JSON.stringify(slim));}
+    catch(e2){console.error('localStorage save failed completely',e2);}
+  }
+  localStorage.setItem('myLibLastSaved',Date.now());
+  scheduleSave();
+}
+
 function pushToFirebase(){
   if(!firebaseReady){syncPending=true;return;}
-  // Photos are now Firebase Storage URLs, safe to store in Realtime DB
-  db.ref('library').set({books,userBudget,balanceHistory,lastSaved:Date.now()})
+  // Strip base64 photos before sending to Firebase (they can be MBs each)
+  const booksClean=books.map(b=>{
+    const c={...b};
+    if(c.photo&&c.photo.startsWith('data:'))c.photo=null;
+    if(c.paymentProof&&c.paymentProof.startsWith('data:'))c.paymentProof=null;
+    return c;
+  });
+  db.ref('library').set({books:booksClean,userBudget,balanceHistory,lastSaved:Date.now()})
     .then(()=>{setSyncStatus('synced');localStorage.setItem('myLibLastSaved',Date.now());})
-    .catch(e=>{console.error(e);setSyncStatus('error');});
+    .catch(e=>{console.error('Firebase push error:',e);setSyncStatus('error');});
 }
 
 function initFirebaseSync(){
@@ -973,11 +1000,7 @@ function loadData(){
   if(v4){const d=JSON.parse(v4);d.forEach(b=>{if(!b.coverType)b.coverType='HC';});return d;}
   return getDefaultBooks();
 }
-function saveData(){
-  localStorage.setItem('myLibV5',JSON.stringify(books));
-  localStorage.setItem('myLibLastSaved',Date.now());
-  scheduleSave();
-}
+// saveData defined above in Firebase section
 
 let books=loadData();
 let nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
@@ -1108,7 +1131,7 @@ function renderGenre(){
   let lb=currentTab==='owned'?books.filter(isOwned):currentTab==='ordered'?books.filter(isOrdered):books;
   const counts={};
   lb.forEach(b=>{(b.genre||'').split('/').forEach(g=>{const gt=g.trim();if(gt)counts[gt]=(counts[gt]||0)+1})});
-  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
   const max=sorted[0]?sorted[0][1]:1;
   $('genreBars').innerHTML=sorted.map(([g,c])=>{
     const isActive=currentGenreFilters.has(g);
@@ -1148,7 +1171,7 @@ function renderTopPriority(){
       ${b.photo?`<img class="priority-thumb" src="${b.photo}" alt="">`:`<div class="priority-thumb-ph">📖</div>`}
       <div class="priority-info"><div class="priority-title">${b.title}</div><div class="priority-author-sb">${b.author}</div></div>
       <div class="priority-price">${fmtS(b.price)}</div>
-    </div>`).join(''):`<div style="color:var(--txt-dim);font-style:italic;font-size:15px;padding:10px 0">All books sudah dimiliki!</div>`;
+    </div>`).join(''):`<div style="color:var(--txt-dim);font-style:italic;font-size:15px;padding:10px 0">All books are owned!</div>`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1402,7 +1425,7 @@ function renderTable(){
         <td style="font-size:12px;color:var(--txt-muted);white-space:nowrap">${bdf}</td>
         <td style="font-size:12px;color:var(--txt-muted);white-space:nowrap">${book.store||'—'}</td>
         <td style="font-size:12px;white-space:nowrap">${book.paymentMethod?`<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.06em;padding:2px 6px;border:1px solid rgba(106,154,184,.3);color:var(--blue-lt);background:rgba(42,74,110,.12)">${book.paymentMethod}</span>`:'<span style="color:var(--txt-dim)">—</span>'}</td>
-        <td><span class="cover-badge ${book.coverType==='HC'?'hc-badge':'sc-badge'}">${book.coverType||'HC'}</span></td>
+        <td><span class="cover-badge ${book.coverType==='HC'?'hc-badge':book.coverType==='SC'?'sc-badge':'se-badge'}">${book.coverType||'HC'}</span></td>
         <td style="font-size:12px;color:var(--txt-dim);white-space:nowrap">${book.isbn||'—'}</td>
         <td class="price-cell" style="text-align:right">${fmt(book.price)}</td>`;
     } else {
@@ -1418,7 +1441,7 @@ function renderTable(){
         <td>${statusBadge(book)}</td>
         <td style="font-size:12px;color:var(--txt-dim)">${book.publisher||'—'}</td>
         <td style="font-size:12px;color:var(--txt-dim)">${book.publisherCountry||'—'}</td>
-        <td><span class="cover-badge ${book.coverType==='HC'?'hc-badge':'sc-badge'}">${book.coverType||'HC'}</span></td>
+        <td><span class="cover-badge ${book.coverType==='HC'?'hc-badge':book.coverType==='SC'?'sc-badge':'se-badge'}">${book.coverType||'HC'}</span></td>
         <td style="font-size:12px;color:var(--txt-dim);white-space:nowrap">${book.isbn||'—'}</td>
         <td class="price-cell" style="text-align:right">${fmt(book.price)}</td>`;
     }
@@ -1567,7 +1590,12 @@ function renderFinance(){
     <div class="fin-card">
       <div class="fin-label">📚 Book Spending</div>
       <div class="fin-val" style="color:var(--green-lt)">${fmt(spent)}</div>
-      <div class="fin-sub">${owned.length} books owned${saldo>0?` · ${Math.round(spent/saldo*100)}% of saldo`:''}</div>
+      <div class="fin-sub">${owned.length} books owned${saldo>0?` · ${Math.round(spent/saldo*100)}% of balance`:''}</div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-label">💳 Remaining Balance</div>
+      <div class="fin-val" style="color:${sisaSaldo>=0?'var(--blue-lt)':'var(--red)'}">${sisaSaldo<0?'−':'' }${fmt(Math.abs(sisaSaldo))}</div>
+      <div class="fin-sub" style="color:${sisaSaldo<0?'var(--red)':'inherit'}">${sisaSaldo<0?'⚠ Over budget':'after book spending'}</div>
     </div>
     <div class="fin-card">
       <div class="fin-label">♡ Wishlist Estimate</div>
@@ -1656,7 +1684,7 @@ function renderFinance(){
     </div>`;}).join(''):`<div style="color:var(--txt-dim);font-style:italic;font-size:15px;padding:8px 0">No purchase data yet.</div>`;
 
   // Top Spend Year (all time — biggest single month across all years)
-  const allMonthsSorted=Object.entries(monthlyAll).sort((a,b2)=>b2[1].total-a[1].total).slice(0,8);
+  const allMonthsSorted=Object.entries(monthlyAll).sort((a,b2)=>b2[1].total-a[1].total).slice(0,10);
   const atMax=allMonthsSorted.length?allMonthsSorted[0][1].total:1;
   $('topSpendYear').innerHTML=allMonthsSorted.length?allMonthsSorted.map(([k,v],i)=>{
     const[y,m]=k.split('-');
@@ -1681,9 +1709,9 @@ function renderFinance(){
 
   // Price tiers
   const tiers=[
-    {k:'cheap',label:'Murah',range:'< 200k',color:'var(--green-lt)',test:b=>b.price<200000},
-    {k:'normal',label:'Normal',range:'200k – 1Jt',color:'var(--gold)',test:b=>b.price>=200000&&b.price<=1000000},
-    {k:'expensive',label:'Mahal',range:'> 1Jt',color:'var(--red)',test:b=>b.price>1000000},
+    {k:'cheap',label:'Budget',range:'< 200k',color:'var(--green-lt)',test:b=>b.price<200000},
+    {k:'normal',label:'Normal',range:'200k – 500k',color:'var(--gold)',test:b=>b.price>=200000&&b.price<=500000},
+    {k:'expensive',label:'Expensive',range:'> 500k',color:'var(--red)',test:b=>b.price>500000},
   ];
   const tierMax=Math.max(...tiers.map(t=>books.filter(t.test).length))||1;
   $('priceTierChart').innerHTML=tiers.map(t=>{
@@ -1754,7 +1782,7 @@ function renderFinance(){
         </div>`;}).join('')}
     </div>
     <div style="border-top:1px solid var(--bg-border);padding-top:8px">
-      ${pmDetailSorted.slice(0,8).map(([pm,{count,total}])=>`
+      ${pmDetailSorted.slice(0,10).map(([pm,{count,total}])=>`
         <div class="chart-bar-row" style="margin-bottom:4px">
           <div class="chart-bar-label" style="width:90px;font-size:12px">${pm}</div>
           <div class="chart-bar-track" style="height:10px"><div class="chart-bar-fill" style="width:${Math.round((total/pmMaxItems)*100)}%;background:var(--blue-lt);opacity:.7"></div></div>
@@ -1784,7 +1812,7 @@ function openDetail(id){
     <div><div class="meta-key">Publisher</div><div class="meta-val">${b.publisher||'—'}</div></div>
     <div><div class="meta-key">Price</div><div class="meta-val" style="color:var(--gold)">${fmt(b.price)}</div></div>
     <div><div class="meta-key">Store</div><div class="meta-val">${b.store||'—'}</div></div>
-    <div><div class="meta-key">Cover Type</div><div class="meta-val"><span class="cover-badge ${b.coverType==='HC'?'hc-badge':'sc-badge'}">${b.coverType||'HC'}</span></div></div>`;
+    <div><div class="meta-key">Cover Type</div><div class="meta-val"><span class="cover-badge ${(b.coverType==='HC'||b.coverType==='HC-SE')?'hc-badge':'sc-badge'}">${b.coverType||'HC'}</span></div></div>`;
   if(isOwned(b)){
     const canRate=b.readStatus==='Read';
     meta+=`
@@ -1894,7 +1922,7 @@ function openPriorityPopup(){
             <th style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;color:var(--txt-dim);padding:6px 10px;text-align:right">Price</th>
             <th></th>
           </tr></thead>
-          <tbody>${rows||'<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--txt-dim);font-style:italic">All books sudah dimiliki!</td></tr>'}</tbody>
+          <tbody>${rows||'<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--txt-dim);font-style:italic">All books are owned!</td></tr>'}</tbody>
         </table>
       </div>
     </div>`;
@@ -1932,7 +1960,7 @@ function addBook(){
     genre:$('aGenre').value.trim()||'Fiction',
     price:parseInt($('aPrice').value)||0,
     priority:parseInt($('aPriority').value)||maxPri,
-    coverType:$('aCover TypeType').value||'HC',
+    coverType:$('aCoverType').value||'HC',
     store:$('aStore').value||'',
     paymentMethod:status==='owned'?($('aPaymentMethod').value||''):null,
     paymentProof:status==='owned'?($('aProofData').value||null):null,
@@ -1972,7 +2000,7 @@ function saveEdit(){
   b.isbn=$('eIsbn').value.trim();
   b.genre=$('eGenre').value.trim()||b.genre;
   b.price=parseInt($('ePrice').value)||b.price;
-  b.coverType=$('eCover TypeType').value;
+  b.coverType=$('eCoverType').value;
   b.store=$('eStore').value||b.store||'';
   b.link=$('eLink').value.trim();
   b.blurb=$('eBlurb').value.trim();
@@ -2000,7 +2028,7 @@ function loadEditForm(id){
   $('eTitle').value=b.title;$('eAuthor').value=b.author;$('ePublisher').value=b.publisher||'';
   $('ePublisherCountry').value=b.publisherCountry||'';$('eIsbn').value=b.isbn||'';
   $('eGenre').value=b.genre;$('ePrice').value=b.price;$('ePriority').value=b.priority||'';
-  $('eCover TypeType').value=b.coverType||'HC';
+  $('eCoverType').value=b.coverType||'HC';
   // Set store select — add custom option if store not in predefined list
   const storeOpts=['Amazon','Periplus','Storepedia','Shopee','Opentrolley','Kinokuniya','Book Depository','Gramedia','Jastip','Offline','Prelove','Direct','Other'];
   if(b.store&&!storeOpts.includes(b.store)){
@@ -2047,12 +2075,12 @@ function confirmDelete(){
 }
 function closeConfirm(){$('confirmOverlay').classList.remove('open');deletingId=null;}
 function deleteBook(){
-  books=books.filter(x=>x.id!==deletingId);books.forEach((b,i)=>b.no=i+1);
-  localStorage.setItem('myLibV5',JSON.stringify(books));
-  localStorage.setItem('myLibLastSaved',Date.now());
-  // Push immediately to Firebase (not debounced) so delete is guaranteed saved
-  pushToFirebase();
-  renderAll();closeConfirm();closeEditPanel();showToast('Book deleted');
+  books=books.filter(x=>x.id!==deletingId);
+  books.forEach((b,i)=>b.no=i+1);
+  saveData();
+  pushToFirebase(); // immediate, not debounced
+  renderAll();closeConfirm();closeEditPanel();
+  showToast('Book deleted');
 }
 
 // ═══════════════════════════════════════════════════════

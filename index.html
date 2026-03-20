@@ -337,7 +337,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
   </div>
   <div class="hd-right">
     <div id="syncStatus" style="font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.1em;padding:5px 10px;border:1px solid var(--bg-border);color:var(--txt-dim);display:flex;align-items:center;gap:5px">
-      <span id="syncDot" style="width:6px;height:6px;border-radius:50%;background:var(--txt-dim);display:inline-block;transition:background .3s"></span>
+      <span id="syncDot" style="width:7px;height:7px;border-radius:50%;background:var(--txt-dim);display:inline-block;transition:background .3s,transform .3s"></span>
       <span id="syncText">Connecting...</span>
     </div>
     <button class="hd-btn" id="bgRemoveBtn" onclick="toggleBgRemove()" title="Auto hapus background foto sampul" style="font-size:12px">✂ BG Remove: ON</button>
@@ -927,7 +927,13 @@ function pushToFirebase(){
       setSyncStatus('synced');
       localStorage.setItem('myLibLastSaved',Date.now());
     })
-    .catch(e=>{console.error('Firebase push error:',e);setSyncStatus('error');});
+    .catch(e=>{
+      console.error('Firebase push error:',e);
+      if(e.code==='PERMISSION_DENIED'){
+        showToast('⚠ Firebase rules expired — update di Firebase Console','error');
+      }
+      setSyncStatus('error');
+    });
 }
 
 function applyMigrations(d){
@@ -1003,18 +1009,26 @@ function initFirebaseSync(){
 
     setSyncStatus('synced');
 
-    if(changed||newBooks.length>0){
-      renderAll();
-      if(newBooks.length>0){
-        // Push merged data back so new books are in Firebase too
-        pushToFirebase();
-      }
+    // Always re-render — Firebase is source of truth
+    renderAll();
+
+    // Flash sync indicator so user sees remote update arrived
+    const dot=$('syncDot');
+    if(dot){
+      dot.style.transform='scale(1.8)';
+      setTimeout(()=>dot.style.transform='scale(1)',400);
     }
 
+    if(newBooks.length>0) pushToFirebase();
     if(syncPending){syncPending=false;pushToFirebase();}
   }, err=>{
     console.error('Firebase error:',err);
-    setSyncStatus('offline');
+    if(err.code==='PERMISSION_DENIED'){
+      setSyncStatus('error');
+      showToast('⚠ Firebase rules expired — update rules di Firebase Console','error');
+    } else {
+      setSyncStatus('offline');
+    }
     firebaseReady=true;
   });
 }

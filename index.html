@@ -340,7 +340,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
       <span id="syncDot" style="width:7px;height:7px;border-radius:50%;background:var(--txt-dim);display:inline-block;transition:background .3s,transform .3s"></span>
       <span id="syncText">Connecting...</span>
     </div>
-    <button class="hd-btn" id="bgRemoveBtn" onclick="toggleBgRemove()" title="Auto hapus background foto sampul" style="font-size:12px">✂ BG Remove: ON</button>
+    <button class="hd-btn" id="bgRemoveBtn" onclick="toggleBgRemove()" title="Auto remove cover photo background" style="font-size:12px">✂ BG Remove: ON</button>
     <button class="hd-btn" id="editToggleBtn" onclick="toggleEditPanel()">✦ Add / Edit</button>
   </div>
 </header>
@@ -372,11 +372,11 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
 
 <div class="main" id="mainLayout">
   <div class="table-section">
-    <div class="section-title" id="sectionTitle">All Koleksi</div>
+    <div class="section-title" id="sectionTitle">All Collection</div>
 
     <!-- GENRE CLOUD -->
     <div class="genre-cloud-wrap" id="genreCloudWrap" style="display:none">
-      <div class="genre-cloud-label">Filter Genre — klik untuk aktifkan / nonaktifkan</div>
+      <div class="genre-cloud-label">Filter Genre — click to toggle</div>
       <div id="genreTagCloud"></div>
     </div>
 
@@ -399,7 +399,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
   </div>
 
   <div class="sidebar" id="sidebar">
-    <div class="section-title" id="sbTitle">Ringkasan</div>
+    <div class="section-title" id="sbTitle">Summary</div>
     <div class="budget-ring-wrap">
       <div style="position:relative;width:120px;height:120px">
         <svg width="120" height="120" viewBox="0 0 120 120">
@@ -517,7 +517,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
     <div class="modal-ornament" style="background:linear-gradient(90deg,transparent,rgba(154,112,184,.5),#b890d8,rgba(154,112,184,.5),transparent)"></div>
     <div class="modal-header" style="padding:20px 22px 14px">
       <div class="modal-badge" style="border-color:rgba(154,112,184,.4);color:#b890d8;background:rgba(154,112,184,.06)">UPLOAD PHOTO</div>
-      <div class="modal-title" style="font-size:17px">Tambah Foto ke Gallery</div>
+      <div class="modal-title" style="font-size:17px">Add Photo to Gallery</div>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -549,7 +549,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeGalleryUpload()">Cancel</button>
-      <button class="btn" style="border-color:#9a70b8;background:rgba(154,112,184,.08);color:#b890d8" onclick="saveGalleryUpload()">✦ Simpan ke Gallery</button>
+      <button class="btn" style="border-color:#9a70b8;background:rgba(154,112,184,.08);color:#b890d8" onclick="saveGalleryUpload()">✦ Save to Gallery</button>
     </div>
   </div>
 </div>
@@ -703,7 +703,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
           <img class="photo-preview" id="aProofPreview" src="" alt="">
           <div id="aProofPlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Payment Proof</div><div class="photo-upload-sub">Click, drag, or paste image (Ctrl+V)</div></div>
         </div>
-        <button class="photo-clear-btn" id="aProofClearBtn" onclick="clearProof('a')" style="display:none">✕ Hapus Payment Proof</button>
+        <button class="photo-clear-btn" id="aProofClearBtn" onclick="clearProof('a')" style="display:none">✕ Remove Payment Proof</button>
         <input type="hidden" id="aProofData">
         <div id="aProofName" style="font-family:'Cinzel',serif;font-size:12px;color:var(--txt-dim);margin-top:4px"></div>
       </div>
@@ -829,7 +829,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
             <img class="photo-preview" id="eProofPreview" src="" alt="">
             <div id="eProofPlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Payment Proof</div><div class="photo-upload-sub">Click, drag, or paste image (Ctrl+V)</div></div>
           </div>
-          <button class="photo-clear-btn" id="eProofClearBtn" onclick="clearProof('e')" style="display:none">✕ Hapus Payment Proof</button>
+          <button class="photo-clear-btn" id="eProofClearBtn" onclick="clearProof('e')" style="display:none">✕ Remove Payment Proof</button>
           <input type="hidden" id="eProofData">
           <div id="eProofName" style="font-family:'Cinzel',serif;font-size:12px;color:var(--txt-dim);margin-top:4px"></div>
         </div>
@@ -944,7 +944,7 @@ function applyMigrations(d){
     if(!b.coverType)b.coverType='HC';
     if(b.coverType==='SC'&&b.publisher?.toLowerCase().includes('everyman'))b.coverType='HC';
     const condMap={'Segel':'Sealed','Tidak Segel':'Unsealed','Tidak Segel dan Menguning':'Unsealed','Tidak Segel dan Rusak':'Unsealed','Jamur':'Moldy','Rusak':'Damaged'};
-    const rsMap={'Sudah Dibaca':'Read','Belum Dibaca':'Unread'};
+    const rsMap={'Read':'Read','Unread':'Unread'};
     if(b.condition&&condMap[b.condition])b.condition=condMap[b.condition];
     if(b.readStatus&&rsMap[b.readStatus])b.readStatus=rsMap[b.readStatus];
     const def=defs.find(x=>x.id===b.id);
@@ -1050,7 +1050,7 @@ function isWishlist(b){return getStatus(b)==='wishlist'}
 function statusBadge(b){
   const s=getStatus(b);
   if(s==='owned')return`<span class="status-badge owned"><span class="status-dot"></span>OWNED</span>`;
-  if(s==='ordered')return`<span class="status-badge ordered"><span class="status-dot"></span>DIPESAN</span>`;
+  if(s==='ordered')return`<span class="status-badge ordered"><span class="status-dot"></span>ORDERED</span>`;
   return`<span class="status-badge wishlist"><span class="status-dot"></span>WISHLIST</span>`;
 }
 
@@ -1073,7 +1073,7 @@ function restorePriority(book){
 // ═══════════════════════════════════════════════════════
 function switchTab(tab){
   currentTab=tab; activeFilters={}; currentPage=1; currentSearch=''; currentGenreFilters=new Set();
-  currentSort=tab==='owned'?'title':'priority'; currentSortDir='asc';
+  currentSort='title'; currentSortDir='asc';
   ['all','ordered','owned','finance','gallery'].forEach(t=>{
     const el=$('tab'+t.charAt(0).toUpperCase()+t.slice(1));
     if(el)el.classList.toggle('active',t===tab);
@@ -1133,11 +1133,11 @@ function renderStats(){
       <div class="budget-row"><span class="budget-key">Read</span><span class="budget-val green">${sdDibaca}</span></div>
       <div class="budget-row"><span class="budget-key">Unread</span><span class="budget-val" style="color:var(--brown-lt)">${blmDibaca}</span></div>`;
   } else if(currentTab==='ordered'){
-    $('ringArc').style.stroke='var(--orange)';$('ringPct').textContent=ordered.length;$('ringLabel').textContent='DIPESAN';
+    $('ringArc').style.stroke='var(--orange)';$('ringPct').textContent=ordered.length;$('ringLabel').textContent='ORDERED';
     $('statsRow').className='stats-row cols3';
     $('statsRow').innerHTML=`
       <div class="stat-card"><div class="stat-label">Ordered</div><div class="stat-value orange">${ordered.length}</div></div>
-      <div class="stat-card"><div class="stat-label">Sudah Owned</div><div class="stat-value green">${owned.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Owned</div><div class="stat-value green">${owned.length}</div></div>
       <div class="stat-card"><div class="stat-label">Wishlist</div><div class="stat-value" style="color:var(--brown-lt)">${wishlist.length}</div></div>`;
     $('budgetDetails').innerHTML=`
       <div class="budget-row"><span class="budget-key">Ordered</span><span class="budget-val orange">${ordered.length} books</span></div>`;
@@ -1183,7 +1183,7 @@ function renderTopPriority(){
   // Make section title clickable
   $('topPriTitle').innerHTML=
     `<span onclick="openPriorityPopup()" style="cursor:pointer;transition:color .15s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">
-      Top Priority <span style="font-size:12px;opacity:.6;letter-spacing:.06em">(${wishlist.length} total · klik untuk semua)</span>
+      Top Priority <span style="font-size:12px;opacity:.6;letter-spacing:.06em">(${wishlist.length} total · click to see all)</span>
     </span>`;
   $('topPriority').innerHTML=top.length?top.map((b,i)=>`
     <div class="priority-item" onclick="openDetail(${b.id})">
@@ -1264,7 +1264,7 @@ function renderFilterBar(){
   });
   html+=`<div class="search-box">
     <span style="color:var(--txt-dim);font-size:13px">⌕</span>
-    <input type="text" placeholder="Cari judul, penulis, genre, publisher..." value="${currentSearch}" oninput="onSearch(this.value)">
+    <input type="text" placeholder="Search title, author, genre, publisher..." value="${currentSearch}" oninput="onSearch(this.value)">
   </div>`;
   fr.innerHTML=html;
 
@@ -1274,9 +1274,9 @@ function renderFilterBar(){
   const gfArr=[...currentGenreFilters];
   const allActive=[...activeKeys,...gfArr];
   if(allActive.length){
-    let chips=activeKeys.map(k=>{const d=defs.find(x=>x.key===k);return d?`<span class="active-chip" onclick="toggleFilter('${k}')" title="klik untuk hapus">${d.label} ✕</span>`:''}).join('');
+    let chips=activeKeys.map(k=>{const d=defs.find(x=>x.key===k);return d?`<span class="active-chip" onclick="toggleFilter('${k}')" title="click to remove">${d.label} ✕</span>`:''}).join('');
     chips+=gfArr.map(g=>`<span class="active-chip" onclick="toggleGenreFilter('${g.replace(/'/g,"\\'")}')">Genre: ${g} ✕</span>`).join('');
-    chips+=`<button class="clear-all-btn" onclick="clearAllFilters()">Hapus All Filter</button>`;
+    chips+=`<button class="clear-all-btn" onclick="clearAllFilters()">Clear All Filters</button>`;
     afr.innerHTML=chips;
   } else {
     afr.innerHTML='';
@@ -1381,8 +1381,8 @@ function renderTable(){
 
   // Count active filters for section title
   const afCount=Object.keys(activeFilters).length+currentGenreFilters.size+(currentSearch?1:0);
-  const sectionBase=currentTab==='all'?'All Koleksi':currentTab==='owned'?'Owned':currentTab==='ordered'?'Ordered':'Koleksi';
-  $('sectionTitle').innerHTML=sectionBase+(afCount>0?` <span style="font-size:12px;color:var(--txt-dim);font-family:'EB Garamond',serif;font-style:italic;text-transform:none;letter-spacing:0"> — ${total} hasil dengan ${afCount} filter aktif</span>`:'');
+  const sectionBase=currentTab==='all'?'All Collection':currentTab==='owned'?'Owned':currentTab==='ordered'?'Ordered':'Collection';
+  $('sectionTitle').innerHTML=sectionBase+(afCount>0?` <span style="font-size:12px;color:var(--txt-dim);font-family:'EB Garamond',serif;font-style:italic;text-transform:none;letter-spacing:0"> — ${total} results with ${afCount} active filter${afCount>1?'s':''}</span>`:'');
 
   // Table headers — sortable
   const head=$('tableHead');
@@ -1541,7 +1541,7 @@ function saveIncome(){
   userIncome=parseFloat(el.value)||0;
   localStorage.setItem('myLibIncome',userIncome);
   renderAll();
-  showToast(`Pendapatan disimpan: ${fmt(userIncome)}/bulan`,'success');
+  showToast(`Income saved: ${fmt(userIncome)}/month`,'success');
 }
 function updateIncomeLive(){
   const el=$('incomeInput');
@@ -1571,7 +1571,7 @@ function renderBalanceHistory(){
         </div>
         <div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.08em;color:var(--txt-dim);margin-top:2px">${e.label}</div>
       </div>
-      ${i===0?`<span style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold-mut);letter-spacing:.1em">TERKINI</span>`:''}
+      ${i===0?`<span style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold-mut);letter-spacing:.1em">LATEST</span>`:''}
       <button onclick="deleteBalanceEntry(${i})" style="background:transparent;border:none;color:var(--txt-dim);cursor:pointer;font-size:15px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--txt-dim)'">✕</button>
     </div>`).join('');
   if(balanceHistory.length>15)
@@ -1582,7 +1582,7 @@ function deleteBalanceEntry(idx){
   localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));
   userBudget=balanceHistory.length?balanceHistory[0].running:0;
   localStorage.setItem('myLibBudget',userBudget);
-  renderAll();showToast('Entri dihapus');
+  renderAll();showToast('Entry deleted');
 }
 
 function renderFinance(){
@@ -1779,14 +1779,14 @@ function renderFinance(){
     {label:'Bank',items:pmBank,color:'var(--gold)'},
     {label:'E-Wallet',items:pmEwallet,color:'var(--blue-lt)'},
     {label:'Kartu',items:pmCard,color:'var(--purple,#9a70b8)'},
-    {label:'Belum Diisi',items:pmUnknown,color:'var(--txt-dim)'},
+    {label:'Unknown',items:pmUnknown,color:'var(--txt-dim)'},
   ].filter(g=>g.items.length>0);
   const pmTotalSpent=owned.reduce((s,b)=>s+b.price,0)||1;
   const pmMaxItems=Math.max(...pmGroups.map(g=>g.items.reduce((s,b)=>s+b.price,0)))||1;
 
   // Individual payment breakdown
   const pmDetail={};
-  owned.forEach(b=>{const pm=b.paymentMethod||'Belum Diisi';pmDetail[pm]=(pmDetail[pm]||{count:0,total:0});pmDetail[pm].count++;pmDetail[pm].total+=b.price;});
+  owned.forEach(b=>{const pm=b.paymentMethod||'Unknown';pmDetail[pm]=(pmDetail[pm]||{count:0,total:0});pmDetail[pm].count++;pmDetail[pm].total+=b.price;});
   const pmDetailSorted=Object.entries(pmDetail).sort((a,b2)=>b2[1].total-a[1].total);
 
   $('paymentChart').innerHTML=`
@@ -1822,7 +1822,7 @@ function openDetail(id){
   const s=getStatus(b);
   const ornamentColor=s==='owned'?'rgba(74,122,58,.6),var(--green-lt)':s==='ordered'?'rgba(200,120,64,.6),var(--orange)':'var(--gold-mut),var(--gold)';
   $('modalOrnament').style.background=`linear-gradient(90deg,transparent,${ornamentColor},transparent)`;
-  $('modalBadge').textContent=s==='owned'?'✓ OWNED':s==='ordered'?'⏳ DIPESAN':'♡ WISHLIST';
+  $('modalBadge').textContent=s==='owned'?'✓ OWNED':s==='ordered'?'⏳ ORDERED':'♡ WISHLIST';
   $('modalBadge').className='modal-badge '+s;
   $('dNum').textContent=`No. ${b.no}${isWishlist(b)&&b.priority?' · Priority #'+b.priority:''}`;
   $('dTitle').textContent=b.title;$('dAuthor').textContent=b.author;$('dBlurb').textContent=b.blurb||'—';
@@ -1954,11 +1954,11 @@ function toggleStatusFromModal(action){
   const b=books.find(x=>x.id===modalOpenId);if(!b)return;
   if(action==='owned'){
     if(isOwned(b)){b.status='wishlist';restorePriority(b);showToast(`"${b.title}" moved back to Wishlist`);}
-    else{if(isWishlist(b))shiftPrioritiesOnOwn(b);b.status='owned';b.condition=b.condition||'Sealed';b.readStatus=b.readStatus||'Unread';b.buyDate=b.buyDate||new Date().toISOString().split('T')[0];showToast(`✓ "${b.title}" ditandai Owned`,'success');}
+    else{if(isWishlist(b))shiftPrioritiesOnOwn(b);b.status='owned';b.condition=b.condition||'Sealed';b.readStatus=b.readStatus||'Unread';b.buyDate=b.buyDate||new Date().toISOString().split('T')[0];showToast(`✓ "${b.title}" marked as Owned`,'success');}
   }else if(action==='ordered'){
     if(isOrdered(b)){b.status='wishlist';showToast(`"${b.title}" order cancelled`);}
     else if(isOwned(b)){showToast('Buku sudah Owned','error');return;}
-    else{b.status='ordered';showToast(`📦 "${b.title}" ditandai Ordered`,'success');}
+    else{b.status='ordered';showToast(`📦 "${b.title}" marked as Ordered`,'success');}
   }
   saveData();renderAll();openDetail(modalOpenId);
 }
@@ -2086,12 +2086,12 @@ function loadEditForm(id){
 // ═══════════════════════════════════════════════════════
 function confirmDeleteFromModal(){
   if(modalOpenId===null)return;deletingId=modalOpenId;
-  const b=books.find(x=>x.id===deletingId);$('confirmMsg').textContent=`"${b.title}" akan dihapus permanen.`;
+  const b=books.find(x=>x.id===deletingId);$('confirmMsg').textContent=`"${b.title}" will be permanently deleted.`;
   closeDetail();$('confirmOverlay').classList.add('open');
 }
 function confirmDelete(){
   if(!editingId)return;const b=books.find(x=>x.id===editingId);deletingId=editingId;
-  $('confirmMsg').textContent=`"${b.title}" akan dihapus permanen.`;$('confirmOverlay').classList.add('open');
+  $('confirmMsg').textContent=`"${b.title}" will be permanently deleted.`;$('confirmOverlay').classList.add('open');
 }
 function closeConfirm(){$('confirmOverlay').classList.remove('open');deletingId=null;}
 function deleteBook(){
@@ -2137,7 +2137,7 @@ function toggleBgRemove(){
     btn.style.color=bgRemoveEnabled?'var(--green-lt)':'var(--txt-muted)';
     btn.style.borderColor=bgRemoveEnabled?'rgba(74,122,58,.5)':'var(--gold-mut)';
   }
-  showToast(`Auto BG Remove ${bgRemoveEnabled?'aktif':'nonaktif'}`,'');
+  showToast(`Auto BG Remove ${bgRemoveEnabled?'ON':'OFF'}`,'');
 }
 function toggleEditPanel(){
   const panel=$('editPanel');
@@ -2186,7 +2186,7 @@ function registerPhoto(data,type,bookTitle,extraInfo){
 // ── BACKGROUND REMOVAL (Canvas-based, covers only) ──
 function removeBackground(dataUrl, callback){
   const img=new Image();
-  img.onerror=()=>{ showToast('Gagal proses gambar, disimpan tanpa BG removal','error'); callback(dataUrl); };
+  img.onerror=()=>{ showToast('Image processing failed, saved without BG removal','error'); callback(dataUrl); };
   img.onload=()=>{
     // Step 1: Resize image to max 1200px to keep memory manageable
     const MAX=1200;
@@ -2340,7 +2340,7 @@ function uploadToStorage(dataUrl, path, onSuccess, onError){
     .then(res=>{
       if(res.secure_url){
         setSyncStatus('synced');
-        showToast('✓ Foto tersimpan di cloud','success');
+        showToast('✓ Photo saved to cloud','success');
         onSuccess(res.secure_url);
       } else {
         throw new Error(res.error?.message||'Upload gagal');
@@ -2367,7 +2367,7 @@ function showPhotoPreview(previewId, dataId, data, uploadPath){
     uploadToStorage(data, uploadPath, url=>{
       $(previewId).src=url;
       $(dataId).value=url;
-      showToast('✓ Foto tersimpan di cloud','success');
+      showToast('✓ Photo saved to cloud','success');
     });
   }
 }
@@ -2445,7 +2445,7 @@ function applyPhotoUrl(urlId,previewId,areaId,dataId){
   $(previewId).src=url;$(previewId).classList.add('show');$(dataId).value=url;$(areaId).classList.add('has-photo');
   const phEl=$(areaId).querySelector('[id$="PhotoPlaceholder"]');if(phEl)phEl.style.display='none';
   const ci=previewId.replace('PhotoPreview','ClearBtn');if($(ci))$(ci).style.display='block';
-  showToast('✓ Foto diterapkan','success');
+  showToast('✓ Photo applied','success');
 }
 function clearPhoto(previewId,areaId,dataId,phId,urlId){
   const prev=$(previewId),area=$(areaId),data=$(dataId),ph=$(phId),url=$(urlId);
@@ -2518,7 +2518,7 @@ function getAllGalleryItems(){
         src:p.src,
         title:p.title||p.filename||'—',
         subtitle:(p.date?new Date(p.date).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'')+
-                 (p.type==='cover'?' · Sampul':p.type==='proof'?' · Payment Proof':' · Foto'),
+                 (p.type==='cover'?' · Cover':p.type==='proof'?' · Payment Proof':' · Photo'),
         date:p.date||null,
         dbId:p.id
       });
@@ -2745,7 +2745,7 @@ document.addEventListener('keydown',e=>{
 
 function deleteGalleryItem(){
   const item=$('lightbox')._currentItem;if(!item)return;
-  if(!confirm(`Hapus foto "${item.title}"?`))return;
+  if(!confirm(`Delete photo "${item.title}"?`))return;
   // Delete from book if it's a cover or proof
   if(item.bookId){
     const b=books.find(x=>x.id===item.bookId);
@@ -2762,7 +2762,7 @@ function deleteGalleryItem(){
   }
   closeLightbox();
   renderAll();
-  showToast('Foto dihapus');
+  showToast('Photo deleted');
 }
 
 // ── GALLERY UPLOAD MODAL ──
@@ -2840,7 +2840,7 @@ function removePendingFile(idx){
 function saveGalleryUpload(){
   if(!pendingGalleryFiles.length){showToast('Please select a photo first','error');return;}
   const type=$('guType').value;
-  const title=$('guTitle').value.trim()||'Foto';
+  const title=$('guTitle').value.trim()||'Photo';
   const date=$('guDate').value||new Date().toISOString().split('T')[0];
   pendingGalleryFiles.forEach((f,i)=>{
     const now=new Date(date);
@@ -2864,7 +2864,7 @@ function saveGalleryUpload(){
   savePhotoDb();
   closeGalleryUpload();
   renderAll();
-  showToast(`✓ ${pendingGalleryFiles.length} foto disimpan ke galeri`,'success');
+  showToast(`✓ ${pendingGalleryFiles.length} photos saved to gallery`,'success');
   pendingGalleryFiles=[];
 }
 

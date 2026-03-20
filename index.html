@@ -2175,6 +2175,14 @@ function toggleBgRemove(){
   }
   showToast(`Auto BG Remove ${bgRemoveEnabled?'aktif':'nonaktif'}`,'');
 }
+function toggleEditPanel(){
+  const panel=$('editPanel');
+  if(panel.classList.contains('open')){
+    closeEditPanel();
+  } else {
+    openEditPanel(null);
+  }
+}
 function openEditPanel(id){
   editingId=id;$('editPanel').classList.add('open');$('editToggleBtn').classList.add('active');
   if(id){switchEpTab('edit');loadEditForm(id);}else switchEpTab('add');

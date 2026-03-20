@@ -959,23 +959,15 @@ function applyMigrations(d){
 
 function initFirebaseSync(){
   setSyncStatus('connecting');
-  // REALTIME: db.ref.on('value') fires immediately on load AND on every remote change
   db.ref('library').on('value', snap=>{
     firebaseReady=true;
     const data=snap.val();
+    if(!data){setSyncStatus('saving');pushToFirebase();return;}
 
-    if(!data){
-      // No cloud data yet — push local data up
-      setSyncStatus('saving');
-      pushToFirebase();
-      return;
-    }
-
-    // ALWAYS apply Firebase data — Firebase is the single source of truth
-    // Preserve local base64 photos (those aren't in Firebase)
+    // Firebase = single source of truth. Just apply cloud data directly.
+    // Restore base64 photos from local memory (they are stripped before push)
     const localBooks=books||[];
     const cloudBooks=(data.books||[]).map(cb=>{
-      // Restore base64 photos from local if cloud has null (stripped before push)
       const local=localBooks.find(lb=>lb.id===cb.id);
       if(local){
         if(!cb.photo&&local.photo)cb.photo=local.photo;
@@ -984,77 +976,49 @@ function initFirebaseSync(){
       return cb;
     });
 
-    // Apply migrations (language, coverType, etc)
-    applyMigrations(cloudBooks);
-
-    // Merge new default books that aren't in Firebase yet
-    const existingIds=new Set(cloudBooks.map(b=>b.id));
-    const defs=getDefaultBooks();
-    const newBooks=defs.filter(def=>!existingIds.has(def.id));
-    const merged=[...cloudBooks,...newBooks];
-    merged.sort((a,b2)=>a.id-b2.id);
-
-    const changed=JSON.stringify(merged)!==JSON.stringify(books);
-    books=merged;
+    books=cloudBooks;
     nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
-
     if(data.userBudget!==undefined)userBudget=data.userBudget;
     if(data.balanceHistory)balanceHistory=data.balanceHistory;
 
-    // Cache in localStorage
     try{localStorage.setItem('myLibV5',JSON.stringify(books));}catch(e){}
-    localStorage.setItem('myLibBudget',String(userBudget));
-    localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));
+    try{localStorage.setItem('myLibBudget',String(userBudget));}catch(e){}
+    try{localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));}catch(e){}
     localStorage.setItem('myLibLastSaved',data.lastSaved||Date.now());
 
     setSyncStatus('synced');
-
-    // Always re-render — Firebase is source of truth
     renderAll();
 
-    // Flash sync indicator so user sees remote update arrived
     const dot=$('syncDot');
-    if(dot){
-      dot.style.transform='scale(1.8)';
-      setTimeout(()=>dot.style.transform='scale(1)',400);
-    }
-
-    if(newBooks.length>0) pushToFirebase();
+    if(dot){dot.style.transform='scale(1.8)';setTimeout(()=>dot.style.transform='scale(1)',400);}
     if(syncPending){syncPending=false;pushToFirebase();}
   }, err=>{
     console.error('Firebase error:',err);
     if(err.code==='PERMISSION_DENIED'){
-      setSyncStatus('error');
-      showToast('⚠ Firebase rules expired — update rules di Firebase Console','error');
-    } else {
-      setSyncStatus('offline');
+      showToast('⚠ Firebase rules expired — update di Firebase Console','error');
     }
+    setSyncStatus('offline');
     firebaseReady=true;
   });
 }
 
 // ═══════════════════════════════════════════════════════
-// DATA — localStorage is just a cache, Firebase is truth
+// DATA — localStorage is cache only, Firebase is truth
 // ═══════════════════════════════════════════════════════
 function loadData(){
-  // Load from localStorage for instant first render
-  // Firebase sync (initFirebaseSync) will immediately overwrite with cloud data
+  // Quick load from localStorage for instant first render.
+  // initFirebaseSync() will immediately overwrite with real cloud data.
   const raw=localStorage.getItem('myLibV5');
   if(raw){
-    try{
-      const d=JSON.parse(raw);
-      applyMigrations(d);
-      return d;
-    }catch(e){console.error('localStorage parse error',e);}
+    try{return JSON.parse(raw);}
+    catch(e){console.error('localStorage parse error',e);}
   }
   const v4=localStorage.getItem('myLibV4');
   if(v4){
-    try{
-      const d=JSON.parse(v4);
-      d.forEach(b=>{if(!b.coverType)b.coverType='HC';});
-      return d;
-    }catch(e){}
+    try{const d=JSON.parse(v4);d.forEach(b=>{if(!b.coverType)b.coverType='HC';});return d;}
+    catch(e){}
   }
+  // First ever load — use defaults and push to Firebase
   return getDefaultBooks();
 }
 
@@ -2484,9 +2448,16 @@ function applyPhotoUrl(urlId,previewId,areaId,dataId){
   showToast('✓ Foto diterapkan','success');
 }
 function clearPhoto(previewId,areaId,dataId,phId,urlId){
-  $(previewId).src='';$(previewId).classList.remove('show');$(dataId).value='';$(areaId).classList.remove('has-photo');
-  if($(phId))$(phId).style.display='block';if($(urlId))$(urlId).value='';
-  const ci=previewId.replace('PhotoPreview','ClearBtn');if($(ci))$(ci).style.display='none';
+  const prev=$(previewId),area=$(areaId),data=$(dataId),ph=$(phId),url=$(urlId);
+  if(prev){prev.src='';prev.classList.remove('show');}
+  if(data)data.value='';
+  if(area)area.classList.remove('has-photo');
+  if(ph)ph.style.display='block';
+  if(url)url.value='';
+  // Remove any PDF preview badge
+  if(area){const badge=area.querySelector('.pdf-preview-badge');if(badge)badge.remove();}
+  const ci=previewId.replace('PhotoPreview','ClearBtn');
+  if($(ci))$(ci).style.display='none';
 }
 
 // Global paste listener for photo upload areas

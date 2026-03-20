@@ -910,12 +910,6 @@ function initFirebaseSync(){
     const localSaved=parseInt(localStorage.getItem('myLibLastSaved')||'0');
     if((data.lastSaved||0)>localSaved){
       books=data.books||[];
-      // Merge any new default books not in cloud data either
-      const defs=getDefaultBooks();
-      const existingIds=new Set(books.map(b=>b.id));
-      const newBooks=defs.filter(def=>!existingIds.has(def.id));
-      if(newBooks.length>0) books.push(...newBooks);
-      books.sort((a,b2)=>a.id-b2.id);
       nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
       if(data.userBudget!==undefined)userBudget=data.userBudget;
       if(data.balanceHistory)balanceHistory=data.balanceHistory;
@@ -923,7 +917,7 @@ function initFirebaseSync(){
       localStorage.setItem('myLibBudget',String(userBudget));
       localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));
       localStorage.setItem('myLibLastSaved',data.lastSaved);
-      renderAll();showToast('✓ Disinkronkan of cloud','success');
+      renderAll();showToast('✓ Synced from cloud','success');
     }
     setSyncStatus('synced');
     if(syncPending){syncPending=false;pushToFirebase();}
@@ -959,15 +953,19 @@ function loadData(){
         if(def&&def.link)b.link=def.link;
       }
     });
-    // MERGE: add any new default books not yet in localStorage
-    const existingIds=new Set(d.map(b=>b.id));
-    const newBooks=defs.filter(def=>!existingIds.has(def.id));
-    if(newBooks.length>0){
-      d.push(...newBooks);
-      // Sort by id to keep order consistent
-      d.sort((a,b2)=>a.id-b2.id);
-      // Save merged data back immediately
-      localStorage.setItem('myLibV5',JSON.stringify(d));
+    // MERGE: add new default books not yet in data — but only if Firebase hasn't synced yet
+    // (i.e., this is a fresh load, not a post-Firebase update)
+    // We track this by checking if myLibLastSaved exists (means Firebase has synced before)
+    const hasSyncedBefore=localStorage.getItem('myLibLastSaved');
+    if(!hasSyncedBefore){
+      // First time — merge all new default books
+      const existingIds=new Set(d.map(b=>b.id));
+      const newBooks=defs.filter(def=>!existingIds.has(def.id));
+      if(newBooks.length>0){
+        d.push(...newBooks);
+        d.sort((a,b2)=>a.id-b2.id);
+        localStorage.setItem('myLibV5',JSON.stringify(d));
+      }
     }
     return d;
   }
@@ -977,7 +975,8 @@ function loadData(){
 }
 function saveData(){
   localStorage.setItem('myLibV5',JSON.stringify(books));
-  scheduleSave(); // push to Firebase (debounced)
+  localStorage.setItem('myLibLastSaved',Date.now());
+  scheduleSave();
 }
 
 let books=loadData();
@@ -2049,7 +2048,11 @@ function confirmDelete(){
 function closeConfirm(){$('confirmOverlay').classList.remove('open');deletingId=null;}
 function deleteBook(){
   books=books.filter(x=>x.id!==deletingId);books.forEach((b,i)=>b.no=i+1);
-  saveData();renderAll();closeConfirm();closeEditPanel();showToast('Buku dihapus');
+  localStorage.setItem('myLibV5',JSON.stringify(books));
+  localStorage.setItem('myLibLastSaved',Date.now());
+  // Push immediately to Firebase (not debounced) so delete is guaranteed saved
+  pushToFirebase();
+  renderAll();closeConfirm();closeEditPanel();showToast('Book deleted');
 }
 
 // ═══════════════════════════════════════════════════════

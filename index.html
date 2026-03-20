@@ -10,11 +10,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root{
-  --bg-deep:#0a0a0a;--bg-card:#111008;--bg-card2:#181408;--bg-border:#3a3020;
-  --gold:#d4a030;--gold-mut:#a07828;--gold-pale:#eedfa8;--cream:#eedfa8;
-  --brown-lt:#c8a848;--txt-muted:#c8b868;--txt-dim:#a08848;
-  --green-dk:#0e2010;--green-lt:#70c870;--blue-lt:#6a98b8;--blue-mid:#1e3a5e;
-  --orange:#c87030;--red:#c05858;
+  --bg-deep:#18120a;--bg-card:#1e160c;--bg-card2:#241a10;--bg-border:#4a3820;
+  --gold:#e8b84a;--gold-mut:#c08030;--gold-pale:#f5ead0;--cream:#f5ead0;
+  --brown-lt:#d4a850;--txt-muted:#e0c880;--txt-dim:#c09848;
+  --green-dk:#1a2e18;--green-lt:#80d078;--blue-lt:#78a8c8;--blue-mid:#2a4a6e;
+  --orange:#d08840;--red:#c86060;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg-deep);color:var(--cream);font-family:'EB Garamond',serif;font-size:16px;line-height:1.65;min-height:100vh}
@@ -916,7 +916,6 @@ function saveData(){
 
 function pushToFirebase(){
   if(!firebaseReady){syncPending=true;return;}
-  // Strip base64 photos before sending to Firebase (they can be MBs each)
   const booksClean=books.map(b=>{
     const c={...b};
     if(c.photo&&c.photo.startsWith('data:'))c.photo=null;
@@ -924,83 +923,126 @@ function pushToFirebase(){
     return c;
   });
   db.ref('library').set({books:booksClean,userBudget,balanceHistory,lastSaved:Date.now()})
-    .then(()=>{setSyncStatus('synced');localStorage.setItem('myLibLastSaved',Date.now());})
+    .then(()=>{
+      setSyncStatus('synced');
+      localStorage.setItem('myLibLastSaved',Date.now());
+    })
     .catch(e=>{console.error('Firebase push error:',e);setSyncStatus('error');});
+}
+
+function applyMigrations(d){
+  const defs=getDefaultBooks();
+  d.forEach(b=>{
+    if(b.status===undefined){b.status=b.bought?'owned':'wishlist';delete b.bought;}
+    if(!b.publisher)b.publisher=b.library==='everyman'?"Everyman's Library":b.library||'';
+    if(!b.coverType)b.coverType='HC';
+    if(b.coverType==='SC'&&b.publisher?.toLowerCase().includes('everyman'))b.coverType='HC';
+    const condMap={'Segel':'Sealed','Tidak Segel':'Unsealed','Tidak Segel dan Menguning':'Unsealed','Tidak Segel dan Rusak':'Unsealed','Jamur':'Moldy','Rusak':'Damaged'};
+    const rsMap={'Sudah Dibaca':'Read','Belum Dibaca':'Unread'};
+    if(b.condition&&condMap[b.condition])b.condition=condMap[b.condition];
+    if(b.readStatus&&rsMap[b.readStatus])b.readStatus=rsMap[b.readStatus];
+    const def=defs.find(x=>x.id===b.id);
+    if(def){
+      if(!b.isbn)b.isbn=def.isbn;
+      if(!b.publisherCountry)b.publisherCountry=def.publisherCountry;
+      if(!b.link||b.link==='')b.link=def.link;
+    }
+  });
+  return d;
 }
 
 function initFirebaseSync(){
   setSyncStatus('connecting');
-  db.ref('library').on('value',snap=>{
+  // REALTIME: db.ref.on('value') fires immediately on load AND on every remote change
+  db.ref('library').on('value', snap=>{
     firebaseReady=true;
     const data=snap.val();
-    if(!data){pushToFirebase();return;}
-    const localSaved=parseInt(localStorage.getItem('myLibLastSaved')||'0');
-    if((data.lastSaved||0)>localSaved){
-      books=data.books||[];
-      nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
-      if(data.userBudget!==undefined)userBudget=data.userBudget;
-      if(data.balanceHistory)balanceHistory=data.balanceHistory;
-      localStorage.setItem('myLibV5',JSON.stringify(books));
-      localStorage.setItem('myLibBudget',String(userBudget));
-      localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));
-      localStorage.setItem('myLibLastSaved',data.lastSaved);
-      renderAll();showToast('✓ Synced from cloud','success');
+
+    if(!data){
+      // No cloud data yet — push local data up
+      setSyncStatus('saving');
+      pushToFirebase();
+      return;
     }
+
+    // ALWAYS apply Firebase data — Firebase is the single source of truth
+    // Preserve local base64 photos (those aren't in Firebase)
+    const localBooks=books||[];
+    const cloudBooks=(data.books||[]).map(cb=>{
+      // Restore base64 photos from local if cloud has null (stripped before push)
+      const local=localBooks.find(lb=>lb.id===cb.id);
+      if(local){
+        if(!cb.photo&&local.photo)cb.photo=local.photo;
+        if(!cb.paymentProof&&local.paymentProof)cb.paymentProof=local.paymentProof;
+      }
+      return cb;
+    });
+
+    // Apply migrations (language, coverType, etc)
+    applyMigrations(cloudBooks);
+
+    // Merge new default books that aren't in Firebase yet
+    const existingIds=new Set(cloudBooks.map(b=>b.id));
+    const defs=getDefaultBooks();
+    const newBooks=defs.filter(def=>!existingIds.has(def.id));
+    const merged=[...cloudBooks,...newBooks];
+    merged.sort((a,b2)=>a.id-b2.id);
+
+    const changed=JSON.stringify(merged)!==JSON.stringify(books);
+    books=merged;
+    nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;
+
+    if(data.userBudget!==undefined)userBudget=data.userBudget;
+    if(data.balanceHistory)balanceHistory=data.balanceHistory;
+
+    // Cache in localStorage
+    try{localStorage.setItem('myLibV5',JSON.stringify(books));}catch(e){}
+    localStorage.setItem('myLibBudget',String(userBudget));
+    localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));
+    localStorage.setItem('myLibLastSaved',data.lastSaved||Date.now());
+
     setSyncStatus('synced');
+
+    if(changed||newBooks.length>0){
+      renderAll();
+      if(newBooks.length>0){
+        // Push merged data back so new books are in Firebase too
+        pushToFirebase();
+      }
+    }
+
     if(syncPending){syncPending=false;pushToFirebase();}
-  },err=>{console.error(err);setSyncStatus('offline');firebaseReady=true;});
+  }, err=>{
+    console.error('Firebase error:',err);
+    setSyncStatus('offline');
+    firebaseReady=true;
+  });
 }
 
 // ═══════════════════════════════════════════════════════
-// DATA (localStorage primary, Firebase secondary)
+// DATA — localStorage is just a cache, Firebase is truth
 // ═══════════════════════════════════════════════════════
 function loadData(){
+  // Load from localStorage for instant first render
+  // Firebase sync (initFirebaseSync) will immediately overwrite with cloud data
   const raw=localStorage.getItem('myLibV5');
   if(raw){
-    const d=JSON.parse(raw);
-    const defs=getDefaultBooks();
-    // Migrate existing books
-    d.forEach(b=>{
-      if(b.status===undefined){b.status=b.bought?'owned':'wishlist';delete b.bought;}
-      if(!b.publisher)b.publisher=b.library==='everyman'?"Everyman's Library":b.library||'';
-      if(!b.coverType)b.coverType='HC';
-      if(b.coverType==='SC'&&b.publisher?.toLowerCase().includes('everyman'))b.coverType='HC';
-      // Migrate Indonesian → English
-      const condMap={'Segel':'Sealed','Tidak Segel':'Unsealed','Tidak Segel dan Menguning':'Unsealed','Tidak Segel dan Rusak':'Unsealed','Jamur':'Moldy','Rusak':'Damaged'};
-      const rsMap={'Sudah Dibaca':'Read','Belum Dibaca':'Unread'};
-      if(b.condition&&condMap[b.condition])b.condition=condMap[b.condition];
-      if(b.readStatus&&rsMap[b.readStatus])b.readStatus=rsMap[b.readStatus];
-      if(!b.isbn||!b.publisherCountry){
-        const def=defs.find(x=>x.id===b.id);
-        if(def){if(!b.isbn)b.isbn=def.isbn;if(!b.publisherCountry)b.publisherCountry=def.publisherCountry;}
-      }
-      // Update purchase links from defaults
-      if(!b.link||b.link===''){
-        const def=defs.find(x=>x.id===b.id);
-        if(def&&def.link)b.link=def.link;
-      }
-    });
-    // MERGE: add new default books not yet in data — but only if Firebase hasn't synced yet
-    // (i.e., this is a fresh load, not a post-Firebase update)
-    // We track this by checking if myLibLastSaved exists (means Firebase has synced before)
-    const hasSyncedBefore=localStorage.getItem('myLibLastSaved');
-    if(!hasSyncedBefore){
-      // First time — merge all new default books
-      const existingIds=new Set(d.map(b=>b.id));
-      const newBooks=defs.filter(def=>!existingIds.has(def.id));
-      if(newBooks.length>0){
-        d.push(...newBooks);
-        d.sort((a,b2)=>a.id-b2.id);
-        localStorage.setItem('myLibV5',JSON.stringify(d));
-      }
-    }
-    return d;
+    try{
+      const d=JSON.parse(raw);
+      applyMigrations(d);
+      return d;
+    }catch(e){console.error('localStorage parse error',e);}
   }
   const v4=localStorage.getItem('myLibV4');
-  if(v4){const d=JSON.parse(v4);d.forEach(b=>{if(!b.coverType)b.coverType='HC';});return d;}
+  if(v4){
+    try{
+      const d=JSON.parse(v4);
+      d.forEach(b=>{if(!b.coverType)b.coverType='HC';});
+      return d;
+    }catch(e){}
+  }
   return getDefaultBooks();
 }
-// saveData defined above in Firebase section
 
 let books=loadData();
 let nextId=books.length?Math.max(...books.map(b=>b.id))+1:1;

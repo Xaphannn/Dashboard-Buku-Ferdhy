@@ -1028,7 +1028,7 @@ let currentTab='all';
 // MULTI-FILTER: object with boolean flags
 let activeFilters={};
 let currentSearch='';
-let currentSort='priority'; // field name
+let currentSort='title'; // default A-Z by title
 let currentSortDir='asc';
 let currentGenreFilters=new Set(); // multi-genre
 let currentPage=1;
@@ -1100,7 +1100,8 @@ function renderStats(){
   const galCount=photoDb.length+books.filter(b=>b.photo).length+books.filter(b=>b.paymentProof).length;
   const cgEl=$('countGallery');if(cgEl)cgEl.textContent=galCount;
 
-  if(currentTab==='gallery'){$('statsRow').className='stats-row cols4';$('statsRow').innerHTML='';return;}
+  if(currentTab==='gallery'||currentTab==='finance'){$('statsRow').style.display='none';$('statsRow').innerHTML='';return;}
+  $('statsRow').style.display='';
 
   const pct=allCount?Math.round(owned.length/allCount*100):0;
   const circ=2*Math.PI*50;
@@ -1123,7 +1124,7 @@ function renderStats(){
     const blmDibaca=owned.length-sdDibaca;
     const rPct=owned.length?Math.round(sdDibaca/owned.length*100):0;
     $('ringArc').style.strokeDashoffset=circ-(rPct/100)*circ;
-    $('ringArc').style.stroke='var(--green-lt)';$('ringPct').textContent=rPct+'%';$('ringLabel').textContent='DIBACA';
+    $('ringArc').style.stroke='var(--green-lt)';$('ringPct').textContent=rPct+'%';$('ringLabel').textContent='READ';
     $('statsRow').className='stats-row cols3';
     $('statsRow').innerHTML=`
       <div class="stat-card"><div class="stat-label">Total Owned</div><div class="stat-value green">${owned.length}</div></div>
@@ -1183,7 +1184,7 @@ function renderTopPriority(){
   // Make section title clickable
   $('topPriTitle').innerHTML=
     `<span onclick="openPriorityPopup()" style="cursor:pointer;transition:color .15s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">
-      Top Priority <span style="font-size:12px;opacity:.6;letter-spacing:.06em">(${wishlist.length} total · click to see all)</span>
+      Top Priority <span style="font-family:'Cinzel',serif;font-size:8.5px;letter-spacing:.15em;opacity:.55">(${wishlist.length} TOTAL · CLICK TO SEE ALL)</span>
     </span>`;
   $('topPriority').innerHTML=top.length?top.map((b,i)=>`
     <div class="priority-item" onclick="openDetail(${b.id})">
@@ -1390,9 +1391,9 @@ function renderTable(){
     head.innerHTML=`
       <th class="no-sort" style="width:28px;color:var(--cream);font-size:15px;font-weight:600">No</th>
       <th class="no-sort cover-cell"></th>
-      ${thSort('title','Judul & Author')}
+      ${thSort('title','Title & Author')}
       ${thSort('genre','Genre')}
-      ${thSort('readStatus','Dibaca')}
+      ${thSort('readStatus','Read')}
       ${thSort('condition','Condition')}
       ${thSort('rating','Rating')}
       ${thSort('buyDate','Buy Date')}
@@ -1406,7 +1407,7 @@ function renderTable(){
       <th class="no-sort" style="width:28px;color:var(--cream);font-size:15px;font-weight:600">No</th>
       <th class="no-sort" style="width:18px"></th>
       <th class="no-sort cover-cell"></th>
-      ${thSort('title','Judul & Author')}
+      ${thSort('title','Title & Author')}
       ${thSort('genre','Genre')}
       ${thSort('status','Status')}
       ${thSort('publisher','Publisher')}
@@ -1531,7 +1532,7 @@ function resetBudget(){
   localStorage.setItem('myLibBudget','0');
   localStorage.setItem('myLibBalanceHistory','[]');
   scheduleSave();
-  renderAll();showToast('Saldo direset');
+  renderAll();showToast('Balance reset');
 }
 function saveBudget(){saveBudgetWithTimestamp();}
 function updateBudgetLive(){}
@@ -1675,7 +1676,7 @@ function renderFinance(){
   const mk=Object.keys(monthly).sort().slice(-8).reverse(); // newest first (top)
   const mm=mk.length?Math.max(...mk.map(k=>monthly[k])):1;
   $('monthlyChart').innerHTML=mk.length?mk.map(k=>{
-    const[yr,mo]=k.split('-');const lb=new Date(yr,mo-1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
+    const[yr,mo]=k.split('-');const lb=new Date(yr,mo-1).toLocaleDateString('en-US',{month:'short',year:'2-digit'});
     const pct=Math.round((monthly[k]/mm)*100);
     return`<div class="chart-bar-row">
       <div class="chart-bar-label">${lb}</div>
@@ -1683,24 +1684,21 @@ function renderFinance(){
       <div class="chart-bar-val">${fmtS(monthly[k])}</div>
     </div>`;}).join(''):`<div style="color:var(--txt-dim);font-style:italic;font-size:15px;padding:8px 0">No purchase date data yet.</div>`;
 
-  // Top Spend per Month (which month had most spending in each year)
+  // Top Spend per Month — top 10 months all time, highest first
   const monthlyAll={};
   owned.forEach(b=>{if(b.buyDate){const d=new Date(b.buyDate);const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;monthlyAll[k]=(monthlyAll[k]||{total:0,books:[]});monthlyAll[k].total+=b.price;monthlyAll[k].books.push(b.title);}});
-  // Group by year, find top month per year
-  const topByYear={};
-  Object.entries(monthlyAll).forEach(([k,v])=>{const yr=k.split('-')[0];if(!topByYear[yr]||v.total>topByYear[yr].total)topByYear[yr]={key:k,total:v.total,books:v.books};});
-  const topMonthEntries=Object.entries(topByYear).sort((a,b2)=>b2[0]-a[0]); // newest year first
-  const tmMax=topMonthEntries.length?Math.max(...topMonthEntries.map(([,v])=>v.total)):1;
-  $('topSpendMonth').innerHTML=topMonthEntries.length?topMonthEntries.map(([yr,v])=>{
-    const[y,m]=v.key.split('-');
-    const monthName=new Date(y,m-1).toLocaleDateString('id-ID',{month:'long'});
+  const topMonthEntries=Object.entries(monthlyAll).sort((a,b2)=>b2[1].total-a[1].total).slice(0,10);
+  const tmMax=topMonthEntries.length?topMonthEntries[0][1].total:1;
+  $('topSpendMonth').innerHTML=topMonthEntries.length?topMonthEntries.map(([k,v],i)=>{
+    const[y,m]=k.split('-');
+    const monthName=new Date(y,m-1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
     return`<div style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-        <span style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold-mut)">${yr}</span>
-        <span style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--cream)">${monthName} · <span style="color:var(--gold)">${fmtS(v.total)}</span></span>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+        <span style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--cream)">${monthName}</span>
+        <span style="font-family:'Cormorant Garamond',serif;font-size:15px;color:${i===0?'var(--gold)':'var(--cream)'}"><span style="color:${i===0?'var(--gold)':'var(--gold-mut)'}">${fmtS(v.total)}</span></span>
       </div>
-      <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(v.total/tmMax*100)}%"></div></div>
-      <div style="font-size:12px;color:var(--txt-dim);margin-top:2px">${v.books.slice(0,2).join(', ')}${v.books.length>2?` +${v.books.length-2} lainnya`:''}</div>
+      <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(v.total/tmMax*100)}%;${i===0?'background:var(--gold)':''}"></div></div>
+      <div style="font-size:12px;color:var(--txt-dim);margin-top:2px">${v.books.slice(0,3).join(', ')}${v.books.length>3?` +${v.books.length-3} more`:''}</div>
     </div>`;}).join(''):`<div style="color:var(--txt-dim);font-style:italic;font-size:15px;padding:8px 0">No purchase data yet.</div>`;
 
   // Top Spend Year (all time — biggest single month across all years)
@@ -1708,7 +1706,7 @@ function renderFinance(){
   const atMax=allMonthsSorted.length?allMonthsSorted[0][1].total:1;
   $('topSpendYear').innerHTML=allMonthsSorted.length?allMonthsSorted.map(([k,v],i)=>{
     const[y,m]=k.split('-');
-    const label=new Date(y,m-1).toLocaleDateString('id-ID',{month:'short',year:'numeric'});
+    const label=new Date(y,m-1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
     return`<div class="chart-bar-row">
       <div class="chart-bar-label" style="width:65px">${label}</div>
       <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(v.total/atMax*100)}%;background:${i===0?'var(--gold)':'linear-gradient(90deg,var(--gold-mut),var(--gold))'}"></div></div>
@@ -1937,7 +1935,7 @@ function openPriorityPopup(){
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="border-bottom:1px solid var(--bg-border)">
             <th style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;color:var(--txt-dim);padding:6px 10px;text-align:left">#</th>
-            <th style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;color:var(--txt-dim);padding:6px 10px;text-align:left">Judul & Author</th>
+            <th style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;color:var(--txt-dim);padding:6px 10px;text-align:left">Title & Author</th>
             <th style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;color:var(--txt-dim);padding:6px 10px;text-align:left">Publisher</th>
             <th style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;color:var(--txt-dim);padding:6px 10px;text-align:right">Price</th>
             <th></th>
@@ -2880,6 +2878,8 @@ function showToast(msg,type=''){
 // RENDER ALL
 // ═══════════════════════════════════════════════════════
 function renderAll(){
+  // Ensure sort is always title A-Z for 'all' tab on fresh render
+  if(currentTab==='all'&&currentSort==='priority')currentSort='title';
   renderStats();
   if(currentTab==='finance'){renderFinance();return;}
   if(currentTab==='gallery'){renderGallery();return;}

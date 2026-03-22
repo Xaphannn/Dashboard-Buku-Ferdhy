@@ -655,6 +655,39 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
       </div>
       <div class="form-group"><label class="form-label">Purchase Link</label><input class="form-input" id="aLink" placeholder="https://..."></div>
       <div class="form-group"><label class="form-label">Blurb / Description</label><textarea class="form-textarea" id="aBlurb" placeholder="Deskripsi singkat..."></textarea></div>
+      <!-- ORDERED FIELDS -->
+      <div id="aOrderedFields" style="display:none">
+        <div class="form-divider"></div>
+        <div class="fsec-title">Order Details</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Order Date</label><input class="form-input" id="aOrderDate" type="date"></div>
+          <div class="form-group"><label class="form-label">Condition</label>
+            <select class="form-select" id="aOrderCondition"><option value="">— Kondisi —</option><option>Sealed</option><option>Unsealed</option><option>Moldy</option><option>Damaged</option></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select class="form-select" id="aOrderPayment">
+            <option value="">— Pilih —</option>
+            <optgroup label="Cash"><option>Cash</option></optgroup>
+            <optgroup label="Bank"><option>BCA</option><option>BRI</option><option>BNI</option><option>Mandiri</option><option>CIMB Niaga</option><option>Bank Other</option></optgroup>
+            <optgroup label="E-Wallet"><option>GoPay</option><option>OVO</option><option>Dana</option><option>ShopeePay</option><option>LinkAja</option><option>Blu BCA</option><option>Jenius</option></optgroup>
+            <optgroup label="Kartu"><option>Kartu Kredit</option><option>Kartu Debit</option></optgroup>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Nomor Resi / No. Tracking <span style="font-size:11px;color:var(--txt-dim);font-weight:normal">(opsional — untuk pembelian Direct/Prelove/Offline)</span></label>
+          <input class="form-input" id="aResi" placeholder="cth: JNE123456, TGS-001..."></div>
+        <div class="form-divider"></div>
+        <div class="fsec-title">Invoice <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(opsional)</span></div>
+        <div class="photo-upload-area" id="aInvoiceArea" style="margin-bottom:8px">
+          <input type="file" accept="image/*,.pdf" onchange="handleInvoiceUpload(this,'aInvoicePreview','aInvoiceData','a')">
+          <img class="photo-preview" id="aInvoicePreview" src="" alt="">
+          <div id="aInvoicePlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">JPG, PNG, PDF</div></div>
+        </div>
+        <button class="photo-clear-btn" id="aInvoiceClearBtn" onclick="clearInvoice('a')" style="display:none">✕ Remove Invoice</button>
+        <input type="hidden" id="aInvoiceData">
+      </div>
+      <!-- /ORDERED FIELDS -->
       <div id="aOwnedFields" style="display:none">
         <div class="form-divider"></div>
         <div class="fsec-title">Owned Details</div>
@@ -768,6 +801,39 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
         </div>
         <div class="form-group"><label class="form-label">Purchase Link</label><input class="form-input" id="eLink"></div>
         <div class="form-group"><label class="form-label">Blurb / Description</label><textarea class="form-textarea" id="eBlurb"></textarea></div>
+        <!-- ORDERED FIELDS EDIT -->
+        <div id="eOrderedFields" style="display:none">
+          <div class="form-divider"></div>
+          <div class="fsec-title">Order Details</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Order Date</label><input class="form-input" id="eOrderDate" type="date"></div>
+            <div class="form-group"><label class="form-label">Condition</label>
+              <select class="form-select" id="eOrderCondition"><option value="">— Kondisi —</option><option>Sealed</option><option>Unsealed</option><option>Moldy</option><option>Damaged</option></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <select class="form-select" id="eOrderPayment">
+              <option value="">— Pilih —</option>
+              <optgroup label="Cash"><option>Cash</option></optgroup>
+              <optgroup label="Bank"><option>BCA</option><option>BRI</option><option>BNI</option><option>Mandiri</option><option>CIMB Niaga</option><option>Bank Other</option></optgroup>
+              <optgroup label="E-Wallet"><option>GoPay</option><option>OVO</option><option>Dana</option><option>ShopeePay</option><option>LinkAja</option><option>Blu BCA</option><option>Jenius</option></optgroup>
+              <optgroup label="Kartu"><option>Kartu Kredit</option><option>Kartu Debit</option></optgroup>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Nomor Resi / No. Tracking <span style="font-size:11px;color:var(--txt-dim);font-weight:normal">(opsional)</span></label>
+            <input class="form-input" id="eResi" placeholder="cth: JNE123456, TGS-001..."></div>
+          <div class="form-divider"></div>
+          <div class="fsec-title">Invoice <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(opsional)</span></div>
+          <div class="photo-upload-area" id="eInvoiceArea" style="margin-bottom:8px">
+            <input type="file" accept="image/*,.pdf" onchange="handleInvoiceUpload(this,'eInvoicePreview','eInvoiceData','e')">
+            <img class="photo-preview" id="eInvoicePreview" src="" alt="">
+            <div id="eInvoicePlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">JPG, PNG, PDF</div></div>
+          </div>
+          <button class="photo-clear-btn" id="eInvoiceClearBtn" onclick="clearInvoice('e')" style="display:none">✕ Remove Invoice</button>
+          <input type="hidden" id="eInvoiceData">
+        </div>
+        <!-- /ORDERED FIELDS EDIT -->
         <div id="eOwnedFields" style="display:none">
           <div class="form-divider"></div>
           <div class="fsec-title">Owned Details</div>
@@ -905,6 +971,8 @@ function saveData(){
       const c={...b};
       if(c.photo&&c.photo.startsWith('data:'))c.photo=null;
       if(c.paymentProof&&c.paymentProof.startsWith('data:'))c.paymentProof=null;
+    if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
+    if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
       return c;
     });
     try{localStorage.setItem('myLibV5',JSON.stringify(slim));}
@@ -920,6 +988,8 @@ function pushToFirebase(){
     const c={...b};
     if(c.photo&&c.photo.startsWith('data:'))c.photo=null;
     if(c.paymentProof&&c.paymentProof.startsWith('data:'))c.paymentProof=null;
+    if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
+    if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
     return c;
   });
   db.ref('library').set({books:booksClean,userBudget,balanceHistory,lastSaved:Date.now()})
@@ -1236,6 +1306,11 @@ const FILTER_DEFS_OWNED=[
   {key:'hc',label:'HC',test:b=>b.coverType==='HC'},
   {key:'sc',label:'SC',test:b=>b.coverType==='SC'},
 ];
+const FILTER_DEFS_OWNED_LOAN=[
+  {key:'dipinjam',label:'📤 Dipinjam',test:b=>isOwned(b)&&!!b.loanedTo,cls:'on-orange'},
+  {key:'tidak-dipinjam',label:'Ada di Rak',test:b=>isOwned(b)&&!b.loanedTo},
+];
+
 const FILTER_DEFS_ORDERED=[
   {key:'hc',label:'HC',test:b=>b.coverType==='HC'},
   {key:'sc',label:'SC',test:b=>b.coverType==='SC'},
@@ -1245,6 +1320,7 @@ function getFilterDefs(){
   if(currentTab==='all')return FILTER_DEFS_ALL;
   if(currentTab==='owned')return FILTER_DEFS_OWNED;
   if(currentTab==='ordered')return FILTER_DEFS_ORDERED;
+  if(currentTab==='owned')return [...(typeof FILTER_DEFS_OWNED!=='undefined'?FILTER_DEFS_OWNED:[]), ...FILTER_DEFS_OWNED_LOAN];
   return [];
 }
 function toggleFilter(key){
@@ -1402,6 +1478,21 @@ function renderTable(){
       ${thSort('coverType','Cover Type')}
       ${thSort('isbn','ISBN')}
       ${thSort('price','Price','text-align:right')}`;
+  } else if(currentTab==='ordered'){
+    head.innerHTML=`
+      <th class="no-sort" style="width:28px;color:var(--cream);font-size:15px;font-weight:600">No</th>
+      <th class="no-sort" style="width:18px"></th>
+      <th class="no-sort cover-cell"></th>
+      ${thSort('title','Title & Author')}
+      ${thSort('genre','Genre')}
+      ${thSort('store','Store')}
+      ${thSort('buyDate','Order Date')}
+      ${thSort('paymentMethod','Bayar')}
+      ${thSort('condition','Condition')}
+      <th style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.08em">Resi / No. Invoice</th>
+      <th style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.08em">Invoice</th>
+      ${thSort('coverType','Cover')}
+      ${thSort('price','Price','text-align:right')}`;
   } else {
     head.innerHTML=`
       <th class="no-sort" style="width:28px;color:var(--cream);font-size:15px;font-weight:600">No</th>
@@ -1425,7 +1516,30 @@ function renderTable(){
         ${g}</span>`).join('');
     const pubLabel=book.publisher?`<span class="pub-label">· ${book.publisher}</span>`:'';
 
-    if(iO){
+    const isOrd=currentTab==='ordered';
+    if(isOrd){
+      const cond=book.condition||'';
+      const bdf=book.orderDate?new Date(book.orderDate).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'2-digit'}):'—';
+      const hasResi=book.resi&&book.resi.trim();
+      const hasInv=!!(book.invoiceUrl||book.invoiceData);
+      tr.innerHTML=`
+        <td style="font-family:'Cinzel',serif;font-size:15px;color:var(--cream);text-align:center;padding:0 6px;font-weight:600">${book._rowNum}</td>
+        <td style="width:18px;padding:0 2px"></td>
+        <td class="cover-cell">${book.photo?`<img src="${book.photo}" class="cover-thumb">`:`<div class="cover-placeholder">📖</div>`}</td>
+        <td style="max-width:185px">
+          <div class="book-title-main">${book.title}</div>
+          <div class="book-author">${book.author}</div>
+        </td>
+        <td>${genreTags}</td>
+        <td style="font-size:12px;color:var(--txt-muted)">${book.store||'—'}</td>
+        <td style="font-size:12px;color:var(--txt-muted);white-space:nowrap">${bdf}</td>
+        <td style="font-size:12px;white-space:nowrap">${book.paymentMethod?`<span style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.06em;padding:2px 6px;border:1px solid rgba(106,154,184,.3);color:var(--blue-lt);background:rgba(42,74,110,.12)">${book.paymentMethod}</span>`:'<span style="color:var(--txt-dim)">—</span>'}</td>
+        <td>${cond?`<span class="cond-badge ${condClass(cond)}">${cond}</span>`:'<span style="color:var(--txt-dim);font-size:12px">—</span>'}</td>
+        <td style="font-size:12px;color:var(--txt-muted);max-width:120px">${hasResi?`<span style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.05em;padding:2px 7px;border:1px solid rgba(232,184,74,.3);color:var(--gold);background:rgba(232,184,74,.07)">${book.resi}</span>`:'<span style="color:var(--txt-dim)">—</span>'}</td>
+        <td>${hasInv?`<button onclick="event.stopPropagation();viewBookInvoice(${book.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.06em;padding:3px 7px;border:1px solid rgba(74,122,58,.4);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">🧾 VIEW</button><button onclick="event.stopPropagation();dlBookInvoice(${book.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.06em;padding:3px 7px;border:1px solid rgba(232,184,74,.3);background:transparent;color:var(--gold);cursor:pointer;margin-left:3px">⬇</button>`:'<span style="color:var(--txt-dim);font-size:11px">—</span>'}</td>
+        <td><span class="cover-badge ${book.coverType==='HC'?'hc-badge':book.coverType==='SC'?'sc-badge':'se-badge'}">${book.coverType||'HC'}</span></td>
+        <td class="price-cell" style="text-align:right">${fmt(book.price)}</td>`;
+    } else if(iO){
       const cond=book.condition||'Sealed';
       const bdf=book.buyDate?new Date(book.buyDate).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'2-digit'}):'—';
       const canRate=book.readStatus==='Read';
@@ -1446,6 +1560,7 @@ function renderTable(){
         <td style="font-size:12px;color:var(--txt-muted);white-space:nowrap">${bdf}</td>
         <td style="font-size:12px;color:var(--txt-muted);white-space:nowrap">${book.store||'—'}</td>
         <td style="font-size:12px;white-space:nowrap">${book.paymentMethod?`<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.06em;padding:2px 6px;border:1px solid rgba(106,154,184,.3);color:var(--blue-lt);background:rgba(42,74,110,.12)">${book.paymentMethod}</span>`:'<span style="color:var(--txt-dim)">—</span>'}</td>
+        <td style="white-space:nowrap">${book.loanedTo?`<span style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;padding:2px 7px;border:1px solid rgba(200,120,64,.4);color:var(--orange);background:rgba(200,120,64,.1)">📤 ${book.loanedTo}</span>`:'<span style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;color:var(--txt-dim)">—</span>'}</td>
         <td><span class="cover-badge ${book.coverType==='HC'?'hc-badge':book.coverType==='SC'?'sc-badge':'se-badge'}">${book.coverType||'HC'}</span></td>
         <td style="font-size:12px;color:var(--txt-dim);white-space:nowrap">${book.isbn||'—'}</td>
         <td class="price-cell" style="text-align:right">${fmt(book.price)}</td>`;
@@ -1864,8 +1979,55 @@ function openDetail(id){
         :`<div style="grid-column:1/-1"><div class="meta-key" style="margin-bottom:4px">Payment Proof</div><img src="${b.paymentProof}" style="width:100%;max-height:110px;object-fit:contain;border:1px solid var(--bg-border);cursor:pointer" onclick="window.open(this.src,'_blank')" title="Click to enlarge"></div>`
     ):''}` ;
   }
-  if(!isOwned(b)){
+  if(isOrdered(b)){
+    const odf=b.orderDate?new Date(b.orderDate).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—';
+    const hasInv=!!(b.invoiceUrl||b.invoiceData);
+    meta+=`
+    <div><div class="meta-key">Order Date</div><div class="meta-val">${odf}</div></div>
+    <div><div class="meta-key">Payment</div><div class="meta-val">${b.paymentMethod?`<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.06em;padding:2px 7px;border:1px solid rgba(106,154,184,.3);color:var(--blue-lt);background:rgba(42,74,110,.12)">${b.paymentMethod}</span>`:'—'}</div></div>
+    <div><div class="meta-key">Condition</div><div class="meta-val">${b.condition?`<span class="cond-badge ${condClass(b.condition)}">${b.condition}</span>`:'—'}</div></div>
+    <div><div class="meta-key">Resi / Tracking</div><div class="meta-val" style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold)">${b.resi||'—'}</div></div>
+    <div><div class="meta-key">ISBN</div><div class="meta-val" style="font-size:15px">${b.isbn||'—'}</div></div>
+    <div style="grid-column:1/-1">
+      <div class="meta-key" style="margin-bottom:6px">🧾 Invoice</div>
+      ${hasInv
+        ? `<div style="display:flex;gap:8px">
+            <button onclick="viewBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(74,122,58,.4);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">👁 LIHAT INVOICE</button>
+            <button onclick="dlBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(232,184,74,.3);background:rgba(232,184,74,.07);color:var(--gold);cursor:pointer">⬇ DOWNLOAD</button>
+          </div>`
+        : '<span style="font-size:12px;color:var(--txt-dim);font-style:italic">Belum ada invoice</span>'
+      }
+    </div>`;
+  } else if(!isOwned(b)){
     meta+=`<div><div class="meta-key">ISBN</div><div class="meta-val" style="font-size:15px">${b.isbn||'—'}</div></div>`;
+  }
+  if(isOwned(b)){
+    meta+=`
+    <div style="grid-column:1/-1">
+      <div class="meta-key" style="margin-bottom:6px">📚 Book Loan</div>
+      <div style="border:1px solid var(--bg-border);background:var(--bg-card2);padding:10px 12px;border-radius:0">
+        ${b.loanedTo
+          ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--orange)">📤 Dipinjam oleh <strong>${b.loanedTo}</strong></div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--txt-dim);margin-top:2px;letter-spacing:.06em">Sejak: ${b.loanDate?new Date(b.loanDate).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—'}</div>
+              </div>
+              <button onclick="returnLoan(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(74,122,58,.5);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">✓ BUKU DIKEMBALIKAN</button>
+            </div>`
+          : `<div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
+              <div style="flex:1;min-width:120px">
+                <div style="font-size:10px;font-family:'Cinzel',serif;letter-spacing:.06em;color:var(--txt-dim);margin-bottom:3px">Nama Peminjam</div>
+                <input id="loanNameInput" class="meta-select" style="width:100%" placeholder="Nama teman...">
+              </div>
+              <div style="flex:1;min-width:110px">
+                <div style="font-size:10px;font-family:'Cinzel',serif;letter-spacing:.06em;color:var(--txt-dim);margin-bottom:3px">Tanggal Pinjam</div>
+                <input id="loanDateInput" class="meta-select" type="date" style="width:100%">
+              </div>
+              <button onclick="lendBook(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:6px 12px;border:1px solid rgba(200,120,64,.5);background:rgba(200,120,64,.1);color:var(--orange);cursor:pointer;white-space:nowrap">📤 PINJAMKAN</button>
+            </div>`
+        }
+      </div>
+    </div>`;
   }
   meta+=`<div><div class="meta-key">Publisher Country</div><div class="meta-val">${b.publisherCountry||'—'}</div></div>`;
   $('dMeta').innerHTML=meta;
@@ -2059,6 +2221,20 @@ function loadEditForm(id){
     $('eCondition').value=b.condition||'Sealed';
     $('eReadStatus').value=b.readStatus||'Unread';
     $('eBuyDate').value=b.buyDate||'';
+  // Ordered fields
+  if($('eOrderDate'))$('eOrderDate').value=b.orderDate||'';
+  if($('eOrderCondition'))$('eOrderCondition').value=b.condition||'';
+  if($('eOrderPayment'))$('eOrderPayment').value=b.paymentMethod||'';
+  if($('eResi'))$('eResi').value=b.resi||'';
+  // Invoice preview
+  if($('eInvoicePreview')&&$('eInvoicePlaceholder')){
+    const hasInv=!!(b.invoiceUrl||b.invoiceData);
+    $('eInvoicePreview').src=b.invoiceUrl||b.invoiceData||'';
+    $('eInvoicePreview').style.display=hasInv&&!(b.invoiceData||'').startsWith('data:application/pdf')?'block':'none';
+    $('eInvoicePlaceholder').style.display=hasInv?'none':'block';
+    if($('eInvoiceClearBtn'))$('eInvoiceClearBtn').style.display=hasInv?'block':'none';
+    if($('eInvoiceData'))$('eInvoiceData').value=b.invoiceData||'';
+  }
     $('ePaymentMethod').value=b.paymentMethod||'';
     // Load proof
     const ps=$('eOwnedProofSection');if(ps)ps.style.display='block';
@@ -2113,12 +2289,15 @@ function goPage(n){currentPage=n;renderTable();}
 // EDIT PANEL
 // ═══════════════════════════════════════════════════════
 function toggleOwnedFields(pfx){
-  const val=$(pfx+'Status').value;
-  $(pfx+'OwnedFields').style.display=val==='owned'?'block':'none';
-  if(pfx==='e'){
-    const ps=$('eOwnedProofSection');
-    if(ps) ps.style.display=val==='owned'?'block':'none';
-  }
+  const sel=$(pfx+'Status');
+  const s=sel?sel.value:'';
+  const ownedDiv=$(pfx+'OwnedFields');
+  const orderedDiv=$(pfx+'OrderedFields');
+  if(ownedDiv) ownedDiv.style.display=s==='owned'?'block':'none';
+  if(orderedDiv) orderedDiv.style.display=s==='ordered'?'block':'none';
+  // show eOwnedProofSection only when owned
+  const proofSec=$(pfx+'OwnedProofSection');
+  if(proofSec) proofSec.style.display=s==='owned'?'block':'none';
 }
 function onEditReadStatusChange(){
   const isRead=$('eReadStatus').value==='Read';
@@ -2368,6 +2547,91 @@ function showPhotoPreview(previewId, dataId, data, uploadPath){
       showToast('✓ Photo saved to cloud','success');
     });
   }
+}
+
+// ── Invoice Upload ──
+function handleInvoiceUpload(input,prevId,dataId,pfx){
+  const f=input.files[0];if(!f)return;
+  if(f.size>10*1024*1024){showToast('File too large (max 10MB)','error');return;}
+  const isPdf=f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf');
+  const r=new FileReader();
+  r.onload=ev=>{
+    const data=ev.target.result;
+    const prev=$(prevId),ph=$(pfx+'InvoicePlaceholder'),cb=$(pfx+'InvoiceClearBtn');
+    if(prev){prev.src=data;prev.style.display=isPdf?'none':'block';}
+    if(ph) ph.style.display=isPdf?'none':'block';
+    if(isPdf&&ph){ph.innerHTML='<div class="photo-upload-icon">📄</div><div class="photo-upload-label">PDF Invoice tersimpan</div>';}
+    if(cb) cb.style.display='block';
+    const d=$(dataId);if(d)d.value=data;
+    if(pfx==='a')window._aInvoiceData=data;
+    else if(pfx==='e')window._eInvoiceData=data;
+  };
+  r.readAsDataURL(f);
+}
+function clearInvoice(pfx){
+  const prev=$(pfx+'InvoicePreview'),ph=$(pfx+'InvoicePlaceholder'),cb=$(pfx+'InvoiceClearBtn'),d=$(pfx+'InvoiceData');
+  if(prev){prev.src='';prev.style.display='none';}
+  if(ph){ph.innerHTML='<div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">JPG, PNG, PDF</div>';ph.style.display='block';}
+  if(cb) cb.style.display='none';
+  if(d) d.value='';
+  if(pfx==='a')window._aInvoiceData=null;
+  else if(pfx==='e')window._eInvoiceData=null;
+}
+
+// ── Invoice View / Download ──
+function viewBookInvoice(id){
+  const b=books.find(x=>x.id===id);if(!b)return;
+  const src=b.invoiceUrl||b.invoiceData;if(!src){showToast('No invoice found','error');return;}
+  const isPdf=src.startsWith('data:application/pdf')||src.includes('/raw/')||src.toLowerCase().endsWith('.pdf');
+  if(isPdf){
+    // Download directly for PDF
+    dlBookInvoice(id);return;
+  }
+  // Image — open in new tab
+  const win=window.open('','_blank');
+  if(win) win.document.write(`<html><body style="margin:0;background:#000"><img src="${src}" style="max-width:100%;display:block"></body></html>`);
+}
+function dlBookInvoice(id){
+  const b=books.find(x=>x.id===id);if(!b)return;
+  const src=b.invoiceUrl||b.invoiceData;if(!src){showToast('No invoice found','error');return;}
+  const fname=(b.title||'Invoice').replace(/[^a-zA-Z0-9]/g,'_')+'_Invoice';
+  if(src.startsWith('data:')){
+    try{
+      const parts=src.split(','),mime=parts[0].match(/:(.*?);/)[1],b64=parts[1];
+      const ext=mime.includes('pdf')?'.pdf':'.jpg';
+      const sz=8192;const arrays=[];
+      for(let o=0;o<b64.length;o+=sz){const ch=b64.slice(o,o+sz);const bc=atob(ch);const bn=new Uint8Array(bc.length);for(let i=0;i<bc.length;i++)bn[i]=bc.charCodeAt(i);arrays.push(bn);}
+      const blob=new Blob(arrays,{type:mime});
+      const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=fname+ext;a.click();URL.revokeObjectURL(u);
+      showToast('Invoice downloaded');
+    }catch(e){showToast('Download failed','error');}
+  } else {
+    fetch(src,{mode:'cors'}).then(r=>r.blob()).then(blob=>{
+      const ext=blob.type.includes('pdf')?'.pdf':'.jpg';
+      const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=fname+ext;a.click();URL.revokeObjectURL(u);
+      showToast('Invoice downloaded');
+    }).catch(()=>showToast('Download failed','error'));
+  }
+}
+
+// ── Book Loan ──
+function lendBook(id){
+  const name=document.getElementById('loanNameInput')?document.getElementById('loanNameInput').value.trim():'';
+  const date=document.getElementById('loanDateInput')?document.getElementById('loanDateInput').value:'';
+  if(!name){showToast('Masukkan nama peminjam','error');return;}
+  const b=books.find(x=>x.id===id);if(!b)return;
+  b.loanedTo=name;
+  b.loanDate=date||new Date().toISOString().split('T')[0];
+  saveData();renderAll();openDetail(id);
+  showToast('📤 Buku dipinjamkan ke '+name);
+}
+function returnLoan(id){
+  const b=books.find(x=>x.id===id);if(!b)return;
+  const name=b.loanedTo||'teman';
+  if(!confirm('Tandai buku sudah dikembalikan oleh '+name+'?'))return;
+  b.loanedTo=null;b.loanDate=null;
+  saveData();renderAll();openDetail(id);
+  showToast('✓ Buku dikembalikan dari '+name);
 }
 
 function handleProofUpload(input,previewId,dataId,pfx){

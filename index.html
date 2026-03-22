@@ -675,14 +675,40 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
             <optgroup label="Kartu"><option>Kartu Kredit</option><option>Kartu Debit</option></optgroup>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Nomor Resi / No. Tracking <span style="font-size:11px;color:var(--txt-dim);font-weight:normal">(opsional — untuk pembelian Direct/Prelove/Offline)</span></label>
-          <input class="form-input" id="aResi" placeholder="cth: JNE123456, TGS-001..."></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ekspedisi <span style="font-size:11px;color:var(--txt-dim);font-weight:normal">(opsional)</span></label>
+            <select class="form-select" id="aEkspedisi">
+              <option value="">— Pilih Ekspedisi —</option>
+              <optgroup label="Domestik">
+                <option>JNE</option><option>J&amp;T Express</option><option>SiCepat</option>
+                <option>Anteraja</option><option>SAP Express</option><option>ID Express</option>
+                <option>Ninja Xpress</option><option>Lion Parcel</option><option>Tiki</option>
+                <option>POS Indonesia</option><option>RPX</option><option>Wahana</option>
+              </optgroup>
+              <optgroup label="Internasional">
+                <option>DHL</option><option>FedEx</option><option>UPS</option>
+                <option>EMS</option><option>Aramex</option>
+              </optgroup>
+              <optgroup label="Marketplace">
+                <option>Shopee Express</option><option>Tokopedia Sameday</option>
+                <option>GoSend</option><option>GrabExpress</option><option>Lalamove</option>
+              </optgroup>
+              <option>Ambil Sendiri / COD</option>
+              <option>Lainnya</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nomor Resi <span style="font-size:11px;color:var(--txt-dim);font-weight:normal">(opsional)</span></label>
+            <input class="form-input" id="aResi" placeholder="cth: JNE1234567890...">
+          </div>
+        </div>
         <div class="form-divider"></div>
         <div class="fsec-title">Invoice <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(opsional)</span></div>
         <div class="photo-upload-area" id="aInvoiceArea" style="margin-bottom:8px">
           <input type="file" accept="image/*,.pdf" onchange="handleInvoiceUpload(this,'aInvoicePreview','aInvoiceData','a')">
           <img class="photo-preview" id="aInvoicePreview" src="" alt="">
-          <div id="aInvoicePlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">JPG, PNG, PDF</div></div>
+          <div id="aInvoicePlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">Klik atau drag · JPG, PNG, PDF · max 20MB</div></div>
         </div>
         <button class="photo-clear-btn" id="aInvoiceClearBtn" onclick="clearInvoice('a')" style="display:none">✕ Remove Invoice</button>
         <input type="hidden" id="aInvoiceData">
@@ -821,14 +847,40 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
               <optgroup label="Kartu"><option>Kartu Kredit</option><option>Kartu Debit</option></optgroup>
             </select>
           </div>
-          <div class="form-group"><label class="form-label">Nomor Resi / No. Tracking <span style="font-size:11px;color:var(--txt-dim);font-weight:normal">(opsional)</span></label>
-            <input class="form-input" id="eResi" placeholder="cth: JNE123456, TGS-001..."></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Ekspedisi <span style="font-size:11px;color:var(--txt-dim);font-weight:normal">(opsional)</span></label>
+              <select class="form-select" id="eEkspedisi">
+                <option value="">— Pilih Ekspedisi —</option>
+                <optgroup label="Domestik">
+                  <option>JNE</option><option>J&amp;T Express</option><option>SiCepat</option>
+                  <option>Anteraja</option><option>SAP Express</option><option>ID Express</option>
+                  <option>Ninja Xpress</option><option>Lion Parcel</option><option>Tiki</option>
+                  <option>POS Indonesia</option><option>RPX</option><option>Wahana</option>
+                </optgroup>
+                <optgroup label="Internasional">
+                  <option>DHL</option><option>FedEx</option><option>UPS</option>
+                  <option>EMS</option><option>Aramex</option>
+                </optgroup>
+                <optgroup label="Marketplace">
+                  <option>Shopee Express</option><option>Tokopedia Sameday</option>
+                  <option>GoSend</option><option>GrabExpress</option><option>Lalamove</option>
+                </optgroup>
+                <option>Ambil Sendiri / COD</option>
+                <option>Lainnya</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nomor Resi <span style="font-size:11px;color:var(--txt-dim);font-weight:normal">(opsional)</span></label>
+              <input class="form-input" id="eResi" placeholder="cth: JNE1234567890...">
+            </div>
+          </div>
           <div class="form-divider"></div>
           <div class="fsec-title">Invoice <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(opsional)</span></div>
           <div class="photo-upload-area" id="eInvoiceArea" style="margin-bottom:8px">
             <input type="file" accept="image/*,.pdf" onchange="handleInvoiceUpload(this,'eInvoicePreview','eInvoiceData','e')">
             <img class="photo-preview" id="eInvoicePreview" src="" alt="">
-            <div id="eInvoicePlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">JPG, PNG, PDF</div></div>
+            <div id="eInvoicePlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">Klik atau drag · JPG, PNG, PDF · max 20MB</div></div>
           </div>
           <button class="photo-clear-btn" id="eInvoiceClearBtn" onclick="clearInvoice('e')" style="display:none">✕ Remove Invoice</button>
           <input type="hidden" id="eInvoiceData">
@@ -1536,7 +1588,10 @@ function renderTable(){
         <td style="font-size:12px;color:var(--txt-muted);white-space:nowrap">${bdf}</td>
         <td style="font-size:12px;white-space:nowrap">${book.paymentMethod?`<span style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.06em;padding:2px 6px;border:1px solid rgba(106,154,184,.3);color:var(--blue-lt);background:rgba(42,74,110,.12)">${book.paymentMethod}</span>`:'<span style="color:var(--txt-dim)">—</span>'}</td>
         <td>${cond?`<span class="cond-badge ${condClass(cond)}">${cond}</span>`:'<span style="color:var(--txt-dim);font-size:12px">—</span>'}</td>
-        <td style="font-size:12px;color:var(--txt-muted);max-width:120px">${hasResi?`<span style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.05em;padding:2px 7px;border:1px solid rgba(232,184,74,.3);color:var(--gold);background:rgba(232,184,74,.07)">${book.resi}</span>`:'<span style="color:var(--txt-dim)">—</span>'}</td>
+        <td style="font-size:12px;max-width:140px">
+          ${book.ekspedisi?`<span style="display:inline-block;font-family:'Cinzel',serif;font-size:10px;letter-spacing:.06em;padding:1px 6px;border:1px solid rgba(106,154,184,.4);color:var(--blue-lt);background:rgba(106,154,184,.08);margin-bottom:3px">${book.ekspedisi}</span><br>`:''}
+          ${hasResi?`<span style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.04em;color:var(--gold)">${book.resi}</span>`:'<span style="color:var(--txt-dim)">—</span>'}
+        </td>
         <td>${hasInv?`<button onclick="event.stopPropagation();viewBookInvoice(${book.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.06em;padding:3px 7px;border:1px solid rgba(74,122,58,.4);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">🧾 VIEW</button><button onclick="event.stopPropagation();dlBookInvoice(${book.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.06em;padding:3px 7px;border:1px solid rgba(232,184,74,.3);background:transparent;color:var(--gold);cursor:pointer;margin-left:3px">⬇</button>`:'<span style="color:var(--txt-dim);font-size:11px">—</span>'}</td>
         <td><span class="cover-badge ${book.coverType==='HC'?'hc-badge':book.coverType==='SC'?'sc-badge':'se-badge'}">${book.coverType||'HC'}</span></td>
         <td class="price-cell" style="text-align:right">${fmt(book.price)}</td>`;
@@ -1987,7 +2042,8 @@ function openDetail(id){
     <div><div class="meta-key">Order Date</div><div class="meta-val">${odf}</div></div>
     <div><div class="meta-key">Payment</div><div class="meta-val">${b.paymentMethod?`<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.06em;padding:2px 7px;border:1px solid rgba(106,154,184,.3);color:var(--blue-lt);background:rgba(42,74,110,.12)">${b.paymentMethod}</span>`:'—'}</div></div>
     <div><div class="meta-key">Condition</div><div class="meta-val">${b.condition?`<span class="cond-badge ${condClass(b.condition)}">${b.condition}</span>`:'—'}</div></div>
-    <div><div class="meta-key">Resi / Tracking</div><div class="meta-val" style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold)">${b.resi||'—'}</div></div>
+    <div><div class="meta-key">Ekspedisi</div><div class="meta-val">${b.ekspedisi?`<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.06em;padding:2px 8px;border:1px solid rgba(106,154,184,.4);color:var(--blue-lt);background:rgba(106,154,184,.08)">${b.ekspedisi}</span>`:'—'}</div></div>
+    <div><div class="meta-key">Nomor Resi</div><div class="meta-val" style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold)">${b.resi||'—'}</div></div>
     <div><div class="meta-key">ISBN</div><div class="meta-val" style="font-size:15px">${b.isbn||'—'}</div></div>
     <div style="grid-column:1/-1">
       <div class="meta-key" style="margin-bottom:6px">🧾 Invoice</div>
@@ -2155,6 +2211,7 @@ function addBook(){
     rating:status==='owned'?parseInt($('aRating').value)||0:0,
     orderDate:status==='ordered'?($('aOrderDate')?$('aOrderDate').value||null:null):null,
     resi:status==='ordered'?($('aResi')?$('aResi').value.trim()||null:null):null,
+    ekspedisi:status==='ordered'?($('aEkspedisi')?$('aEkspedisi').value||null:null):null,
     invoiceData:status==='ordered'?($('aInvoiceData')?$('aInvoiceData').value||null:null):null,
   });
   // Register cover photo in DB if uploaded
@@ -2164,7 +2221,7 @@ function addBook(){
   ['aTitle','aAuthor','aPublisher','aPublisherCountry','aIsbn','aGenre','aPrice','aPriority','aLink','aBlurb','aPhotoData','aPhotoUrl'].forEach(id=>{if($(id))$(id).value=''});
   $('aStore').value='';$('aPaymentMethod').value='';
   clearProof('a');
-  $('aStatus').value='wishlist';$('aOwnedFields').style.display='none';if($('aOrderedFields'))$('aOrderedFields').style.display='none';if($('aOrderDate'))$('aOrderDate').value='';if($('aResi'))$('aResi').value='';clearInvoice('a');
+  $('aStatus').value='wishlist';$('aOwnedFields').style.display='none';if($('aOrderedFields'))$('aOrderedFields').style.display='none';if($('aOrderDate'))$('aOrderDate').value='';if($('aResi'))$('aResi').value='';if($('aEkspedisi'))$('aEkspedisi').value='';clearInvoice('a');
   clearPhoto('aPhotoPreview','aPhotoArea','aPhotoData','aPhotoPlaceholder','aPhotoUrl');
   showToast(`✓ "${title}" added`,'success');
 }
@@ -2205,6 +2262,7 @@ function saveEdit(){
     b.condition=$('eOrderCondition')?$('eOrderCondition').value||null:b.condition;
     b.paymentMethod=$('eOrderPayment')?$('eOrderPayment').value||null:b.paymentMethod;
     b.resi=$('eResi')?$('eResi').value.trim()||null:b.resi;
+    b.ekspedisi=$('eEkspedisi')?$('eEkspedisi').value||null:b.ekspedisi;
     const invD=$('eInvoiceData');if(invD&&invD.value)b.invoiceData=invD.value;
   }
   const pd=$('ePhotoData').value;b.photo=pd||null;
@@ -2254,6 +2312,7 @@ function loadEditForm(id){
   if($('eOrderCondition'))$('eOrderCondition').value=b.condition||'';
   if($('eOrderPayment'))$('eOrderPayment').value=b.paymentMethod||'';
   if($('eResi'))$('eResi').value=b.resi||'';
+  if($('eEkspedisi'))$('eEkspedisi').value=b.ekspedisi||'';
   const hasInv=!!(b.invoiceUrl||b.invoiceData);
   if($('eInvoicePreview')){
     const isPdfInv=(b.invoiceData||'').startsWith('data:application/pdf');
@@ -2564,31 +2623,78 @@ function showPhotoPreview(previewId, dataId, data, uploadPath){
 
 // ── Invoice Upload ──
 function handleInvoiceUpload(input,prevId,dataId,pfx){
-  const f=input.files[0];if(!f)return;
-  if(f.size>10*1024*1024){showToast('File too large (max 10MB)','error');return;}
-  const isPdf=f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf');
-  const r=new FileReader();
-  r.onload=ev=>{
+  const file=input.files[0];if(!file)return;
+  if(file.size>20*1024*1024){showToast('File too large (max 20MB)','error');return;}
+  const isPdf=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
+  const reader=new FileReader();
+  reader.onload=ev=>{
     const data=ev.target.result;
-    const prev=$(prevId),ph=$(pfx+'InvoicePlaceholder'),cb=$(pfx+'InvoiceClearBtn');
-    if(prev){prev.src=data;prev.style.display=isPdf?'none':'block';}
-    if(ph) ph.style.display=isPdf?'none':'block';
-    if(isPdf&&ph){ph.innerHTML='<div class="photo-upload-icon">📄</div><div class="photo-upload-label">PDF Invoice tersimpan</div>';}
-    if(cb) cb.style.display='block';
-    const d=$(dataId);if(d)d.value=data;
-    if(pfx==='a')window._aInvoiceData=data;
-    else if(pfx==='e')window._eInvoiceData=data;
+    const prevEl=$(prevId);
+    const area=prevEl?.closest('.photo-upload-area')||$(pfx+'InvoiceArea');
+    const ph=$(pfx+'InvoicePlaceholder');
+    const cb=$(pfx+'InvoiceClearBtn');
+    const d=$(dataId);
+    if(isPdf){
+      // PDF — show badge, not image
+      if(prevEl){prevEl.style.display='none';prevEl.classList.remove('show');}
+      if(area){
+        area.classList.add('has-photo');
+        // Remove old badge if any
+        const oldBadge=area.querySelector('.inv-pdf-badge');
+        if(oldBadge)oldBadge.remove();
+        const badge=document.createElement('div');
+        badge.className='inv-pdf-badge';
+        badge.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 10px;';
+        badge.innerHTML=`<div style="font-size:36px">📄</div><div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.1em;color:var(--cream);margin-top:6px;text-align:center;word-break:break-all">${file.name}</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:3px">PDF · ${(file.size/1024).toFixed(0)}KB</div>`;
+        area.appendChild(badge);
+      }
+      if(ph)ph.style.display='none';
+      if(d)d.value=data;
+      if(cb)cb.style.display='block';
+      showToast(`✓ PDF invoice terpasang: ${file.name}`,'success');
+    } else {
+      // Image — show preview, upload to Cloudinary
+      if(prevEl){prevEl.src=data;prevEl.classList.add('show');prevEl.style.display='';}
+      if(area){
+        area.classList.add('has-photo');
+        const oldBadge=area.querySelector('.inv-pdf-badge');
+        if(oldBadge)oldBadge.remove();
+      }
+      if(ph)ph.style.display='none';
+      if(d)d.value=data;
+      if(cb)cb.style.display='block';
+      showToast(`✓ Invoice terpasang`,'success');
+      // Upload to Cloudinary in background
+      const titleEl=$(pfx==='a'?'aTitle':'eTitle');
+      const bookTitle=titleEl?titleEl.value.trim():'book';
+      const path=`invoices/inv_${sanitizeFilename(bookTitle)}_${Date.now()}`;
+      uploadToStorage(data, path, url=>{
+        if(d)d.value=url;
+        if(prevEl)prevEl.src=url;
+        showToast(`✓ Invoice tersimpan di cloud`,'success');
+      }, err=>{
+        // Keep base64 if Cloudinary fails — still usable locally
+        showToast(`Invoice tersimpan lokal`,'success');
+      });
+    }
   };
-  r.readAsDataURL(f);
+  reader.readAsDataURL(file);
 }
 function clearInvoice(pfx){
-  const prev=$(pfx+'InvoicePreview'),ph=$(pfx+'InvoicePlaceholder'),cb=$(pfx+'InvoiceClearBtn'),d=$(pfx+'InvoiceData');
-  if(prev){prev.src='';prev.style.display='none';}
-  if(ph){ph.innerHTML='<div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">JPG, PNG, PDF</div>';ph.style.display='block';}
-  if(cb) cb.style.display='none';
-  if(d) d.value='';
-  if(pfx==='a')window._aInvoiceData=null;
-  else if(pfx==='e')window._eInvoiceData=null;
+  const prev=$(pfx+'InvoicePreview'),area=$(pfx+'InvoiceArea');
+  const ph=$(pfx+'InvoicePlaceholder'),cb=$(pfx+'InvoiceClearBtn'),d=$(pfx+'InvoiceData');
+  if(prev){prev.src='';prev.classList.remove('show');prev.style.display='none';}
+  if(area){
+    area.classList.remove('has-photo');
+    const badge=area.querySelector('.inv-pdf-badge');
+    if(badge)badge.remove();
+  }
+  if(ph){
+    ph.innerHTML='<div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">Klik atau drag · JPG, PNG, PDF · max 20MB</div>';
+    ph.style.display='block';
+  }
+  if(cb)cb.style.display='none';
+  if(d)d.value='';
 }
 
 // ── Invoice View / Download ──

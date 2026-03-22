@@ -1475,6 +1475,7 @@ function renderTable(){
       ${thSort('buyDate','Buy Date')}
       ${thSort('store','Store')}
       ${thSort('paymentMethod','Bayar')}
+      <th style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.08em;color:var(--cream)">Loan</th>
       ${thSort('coverType','Cover Type')}
       ${thSort('isbn','ISBN')}
       ${thSort('price','Price','text-align:right')}`;
@@ -1560,7 +1561,7 @@ function renderTable(){
         <td style="font-size:12px;color:var(--txt-muted);white-space:nowrap">${bdf}</td>
         <td style="font-size:12px;color:var(--txt-muted);white-space:nowrap">${book.store||'—'}</td>
         <td style="font-size:12px;white-space:nowrap">${book.paymentMethod?`<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.06em;padding:2px 6px;border:1px solid rgba(106,154,184,.3);color:var(--blue-lt);background:rgba(42,74,110,.12)">${book.paymentMethod}</span>`:'<span style="color:var(--txt-dim)">—</span>'}</td>
-        <td style="white-space:nowrap">${book.loanedTo?`<span style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;padding:2px 7px;border:1px solid rgba(200,120,64,.4);color:var(--orange);background:rgba(200,120,64,.1)">📤 ${book.loanedTo}</span>`:'<span style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;color:var(--txt-dim)">—</span>'}</td>
+        <td style="white-space:nowrap">${book.loanedTo?`<span style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;padding:2px 7px;border:1px solid rgba(200,120,64,.4);color:var(--orange);background:rgba(200,120,64,.1)">📤 ${book.loanedTo}</span>`:`<span style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;color:var(--txt-dim)">—</span>`}</td>
         <td><span class="cover-badge ${book.coverType==='HC'?'hc-badge':book.coverType==='SC'?'sc-badge':'se-badge'}">${book.coverType||'HC'}</span></td>
         <td style="font-size:12px;color:var(--txt-dim);white-space:nowrap">${book.isbn||'—'}</td>
         <td class="price-cell" style="text-align:right">${fmt(book.price)}</td>`;
@@ -2142,16 +2143,19 @@ function addBook(){
     priority:parseInt($('aPriority').value)||maxPri,
     coverType:$('aCoverType').value||'HC',
     store:$('aStore').value||'',
-    paymentMethod:status==='owned'?($('aPaymentMethod').value||''):null,
+    paymentMethod:status==='owned'?($('aPaymentMethod').value||''):status==='ordered'?($('aOrderPayment')?$('aOrderPayment').value||null:null):null,
     paymentProof:status==='owned'?($('aProofData').value||null):null,
     link:$('aLink').value.trim(),
     blurb:$('aBlurb').value.trim(),
     status,
     photo:$('aPhotoData').value||null,
-    condition:status==='owned'?$('aCondition').value:null,
+    condition:status==='owned'?$('aCondition').value:status==='ordered'?($('aOrderCondition')?$('aOrderCondition').value||null:null):null,
     readStatus:status==='owned'?$('aReadStatus').value:null,
     buyDate:status==='owned'?($('aBuyDate').value||new Date().toISOString().split('T')[0]):null,
     rating:status==='owned'?parseInt($('aRating').value)||0:0,
+    orderDate:status==='ordered'?($('aOrderDate')?$('aOrderDate').value||null:null):null,
+    resi:status==='ordered'?($('aResi')?$('aResi').value.trim()||null:null):null,
+    invoiceData:status==='ordered'?($('aInvoiceData')?$('aInvoiceData').value||null:null):null,
   });
   // Register cover photo in DB if uploaded
   const coverData=$('aPhotoData').value;
@@ -2160,7 +2164,7 @@ function addBook(){
   ['aTitle','aAuthor','aPublisher','aPublisherCountry','aIsbn','aGenre','aPrice','aPriority','aLink','aBlurb','aPhotoData','aPhotoUrl'].forEach(id=>{if($(id))$(id).value=''});
   $('aStore').value='';$('aPaymentMethod').value='';
   clearProof('a');
-  $('aStatus').value='wishlist';$('aOwnedFields').style.display='none';
+  $('aStatus').value='wishlist';$('aOwnedFields').style.display='none';if($('aOrderedFields'))$('aOrderedFields').style.display='none';if($('aOrderDate'))$('aOrderDate').value='';if($('aResi'))$('aResi').value='';clearInvoice('a');
   clearPhoto('aPhotoPreview','aPhotoArea','aPhotoData','aPhotoPlaceholder','aPhotoUrl');
   showToast(`✓ "${title}" added`,'success');
 }
@@ -2196,6 +2200,13 @@ function saveEdit(){
     b.paymentMethod=$('ePaymentMethod').value||b.paymentMethod||'';
     const pp=$('eProofData');if(pp&&pp.value) b.paymentProof=pp.value;
   }
+  if(newStatus==='ordered'){
+    b.orderDate=$('eOrderDate')?$('eOrderDate').value||null:b.orderDate;
+    b.condition=$('eOrderCondition')?$('eOrderCondition').value||null:b.condition;
+    b.paymentMethod=$('eOrderPayment')?$('eOrderPayment').value||null:b.paymentMethod;
+    b.resi=$('eResi')?$('eResi').value.trim()||null:b.resi;
+    const invD=$('eInvoiceData');if(invD&&invD.value)b.invoiceData=invD.value;
+  }
   const pd=$('ePhotoData').value;b.photo=pd||null;
   saveData();renderAll();closeEditPanel();
   showToast(`✓ "${b.title}" updated`,'success');
@@ -2221,20 +2232,6 @@ function loadEditForm(id){
     $('eCondition').value=b.condition||'Sealed';
     $('eReadStatus').value=b.readStatus||'Unread';
     $('eBuyDate').value=b.buyDate||'';
-  // Ordered fields
-  if($('eOrderDate'))$('eOrderDate').value=b.orderDate||'';
-  if($('eOrderCondition'))$('eOrderCondition').value=b.condition||'';
-  if($('eOrderPayment'))$('eOrderPayment').value=b.paymentMethod||'';
-  if($('eResi'))$('eResi').value=b.resi||'';
-  // Invoice preview
-  if($('eInvoicePreview')&&$('eInvoicePlaceholder')){
-    const hasInv=!!(b.invoiceUrl||b.invoiceData);
-    $('eInvoicePreview').src=b.invoiceUrl||b.invoiceData||'';
-    $('eInvoicePreview').style.display=hasInv&&!(b.invoiceData||'').startsWith('data:application/pdf')?'block':'none';
-    $('eInvoicePlaceholder').style.display=hasInv?'none':'block';
-    if($('eInvoiceClearBtn'))$('eInvoiceClearBtn').style.display=hasInv?'block':'none';
-    if($('eInvoiceData'))$('eInvoiceData').value=b.invoiceData||'';
-  }
     $('ePaymentMethod').value=b.paymentMethod||'';
     // Load proof
     const ps=$('eOwnedProofSection');if(ps)ps.style.display='block';
@@ -2250,6 +2247,22 @@ function loadEditForm(id){
     $('eRating').style.cursor=isRead?'pointer':'not-allowed';
     $('eRating').value=isRead?(b.rating||0):0;
   }
+  // Ordered fields (show regardless of status, for books that were ordered)
+  const eOrdDiv=$('eOrderedFields');
+  if(eOrdDiv) eOrdDiv.style.display=isOrdered(b)?'block':'none';
+  if($('eOrderDate'))$('eOrderDate').value=b.orderDate||'';
+  if($('eOrderCondition'))$('eOrderCondition').value=b.condition||'';
+  if($('eOrderPayment'))$('eOrderPayment').value=b.paymentMethod||'';
+  if($('eResi'))$('eResi').value=b.resi||'';
+  const hasInv=!!(b.invoiceUrl||b.invoiceData);
+  if($('eInvoicePreview')){
+    const isPdfInv=(b.invoiceData||'').startsWith('data:application/pdf');
+    $('eInvoicePreview').src=b.invoiceUrl||b.invoiceData||'';
+    $('eInvoicePreview').style.display=(hasInv&&!isPdfInv)?'block':'none';
+  }
+  if($('eInvoicePlaceholder'))$('eInvoicePlaceholder').style.display=hasInv?'none':'block';
+  if($('eInvoiceClearBtn'))$('eInvoiceClearBtn').style.display=hasInv?'block':'none';
+  if($('eInvoiceData'))$('eInvoiceData').value=b.invoiceData||'';
   const prev=$('ePhotoPreview'),area=$('ePhotoArea'),ph=$('ePhotoPlaceholder'),pd=$('ePhotoData');
   if(b.photo){prev.src=b.photo;prev.classList.add('show');area.classList.add('has-photo');ph.style.display='none';pd.value=b.photo;$('eClearBtn').style.display='block';}
   else{prev.classList.remove('show');area.classList.remove('has-photo');ph.style.display='block';pd.value='';$('eClearBtn').style.display='none';}

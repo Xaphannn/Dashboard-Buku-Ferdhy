@@ -2033,7 +2033,31 @@ function openDetail(id){
       b.paymentProof.startsWith('data:application/pdf')
         ?`<div style="grid-column:1/-1"><div class="meta-key" style="margin-bottom:4px">Payment Proof</div><div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--bg-border);background:var(--bg-card2);cursor:pointer" onclick="downloadProofDirect('${b.id}')"><span style="font-size:28px">📄</span><div><div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream)">PDF Payment Proof</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:2px">Click to download</div></div></div></div>`
         :`<div style="grid-column:1/-1"><div class="meta-key" style="margin-bottom:4px">Payment Proof</div><img src="${b.paymentProof}" style="width:100%;max-height:110px;object-fit:contain;border:1px solid var(--bg-border);cursor:pointer" onclick="window.open(this.src,'_blank')" title="Click to enlarge"></div>`
-    ):''}` ;
+    ):''}
+    ${(()=>{
+      const hasInv=!!(b.invoiceUrl||b.invoiceData);
+      return `<div style="grid-column:1/-1">
+        <div class="meta-key" style="margin-bottom:6px">🧾 Invoice Pembelian</div>
+        <div style="border:1px solid var(--bg-border);background:var(--bg-card2);padding:10px 12px">
+          ${hasInv
+            ?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                <button onclick="viewBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(74,122,58,.4);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">👁 LIHAT</button>
+                <button onclick="dlBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(232,184,74,.3);background:rgba(232,184,74,.07);color:var(--gold);cursor:pointer">⬇ DOWNLOAD</button>
+                <button onclick="removeBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(180,60,60,.4);background:transparent;color:var(--red);cursor:pointer">✕ HAPUS</button>
+              </div>`
+            :`<div style="margin-bottom:8px;font-size:12px;color:var(--txt-dim);font-style:italic">Belum ada invoice — upload di bawah</div>`
+          }
+          <div class="photo-upload-area" id="modalInvArea_${b.id}" style="margin-bottom:0;min-height:60px;padding:10px">
+            <input type="file" accept="image/*,.pdf" onchange="handleModalInvoiceUpload(this,${b.id})">
+            <div id="modalInvPh_${b.id}">
+              <div class="photo-upload-icon" style="font-size:18px">🧾</div>
+              <div class="photo-upload-label" style="font-size:11px">${hasInv?'Ganti Invoice':'Upload Invoice'}</div>
+              <div class="photo-upload-sub">Klik atau drag · JPG, PNG, PDF · max 20MB</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    })()}` ;
   }
   if(isOrdered(b)){
     const odf=b.orderDate?new Date(b.orderDate).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—';

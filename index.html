@@ -1013,18 +1013,17 @@ function scheduleSave(){
 }
 
 function saveData(){
-  // Save to localStorage — strip large base64 if quota exceeded
+  // Save to localStorage — strip large base64 only if quota exceeded
   try{
     localStorage.setItem('myLibV5',JSON.stringify(books));
   } catch(e){
-    // QuotaExceededError — save without photo data
+    // QuotaExceededError — save without photo/binary data
     console.warn('localStorage quota exceeded, saving without photos');
     const slim=books.map(b=>{
       const c={...b};
       if(c.photo&&c.photo.startsWith('data:'))c.photo=null;
       if(c.paymentProof&&c.paymentProof.startsWith('data:'))c.paymentProof=null;
-    if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
-    if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
+      if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
       return c;
     });
     try{localStorage.setItem('myLibV5',JSON.stringify(slim));}
@@ -1094,6 +1093,7 @@ function initFirebaseSync(){
       if(local){
         if(!cb.photo&&local.photo)cb.photo=local.photo;
         if(!cb.paymentProof&&local.paymentProof)cb.paymentProof=local.paymentProof;
+        if(!cb.invoiceData&&local.invoiceData)cb.invoiceData=local.invoiceData;
       }
       return cb;
     });
@@ -2047,13 +2047,26 @@ function openDetail(id){
     <div><div class="meta-key">ISBN</div><div class="meta-val" style="font-size:15px">${b.isbn||'—'}</div></div>
     <div style="grid-column:1/-1">
       <div class="meta-key" style="margin-bottom:6px">🧾 Invoice</div>
-      ${hasInv
-        ? `<div style="display:flex;gap:8px">
-            <button onclick="viewBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(74,122,58,.4);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">👁 LIHAT INVOICE</button>
-            <button onclick="dlBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(232,184,74,.3);background:rgba(232,184,74,.07);color:var(--gold);cursor:pointer">⬇ DOWNLOAD</button>
-          </div>`
-        : '<span style="font-size:12px;color:var(--txt-dim);font-style:italic">Belum ada invoice</span>'
-      }
+      <div style="border:1px solid var(--bg-border);background:var(--bg-card2);padding:10px 12px">
+        ${hasInv
+          ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <button onclick="viewBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(74,122,58,.4);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">👁 LIHAT</button>
+              <button onclick="dlBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(232,184,74,.3);background:rgba(232,184,74,.07);color:var(--gold);cursor:pointer">⬇ DOWNLOAD</button>
+              <button onclick="removeBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(180,60,60,.4);background:transparent;color:var(--red);cursor:pointer">✕ HAPUS</button>
+            </div>`
+          : `<div style="margin-bottom:8px;font-size:12px;color:var(--txt-dim);font-style:italic">Belum ada invoice — upload di bawah</div>`
+        }
+        <div style="margin-top:8px">
+          <div class="photo-upload-area" id="modalInvArea_${b.id}" style="margin-bottom:6px;min-height:60px;padding:10px">
+            <input type="file" accept="image/*,.pdf" onchange="handleModalInvoiceUpload(this,${b.id})">
+            <div id="modalInvPh_${b.id}">
+              <div class="photo-upload-icon" style="font-size:18px">🧾</div>
+              <div class="photo-upload-label" style="font-size:11px">${hasInv?'Ganti Invoice':'Upload Invoice'}</div>
+              <div class="photo-upload-sub">Klik atau drag · JPG, PNG, PDF · max 20MB</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>`;
   } else if(!isOwned(b)){
     meta+=`<div><div class="meta-key">ISBN</div><div class="meta-val" style="font-size:15px">${b.isbn||'—'}</div></div>`;
@@ -2622,9 +2635,42 @@ function showPhotoPreview(previewId, dataId, data, uploadPath){
 }
 
 // ── Invoice Upload ──
+// ── Modal-direct invoice upload (ordered books) ──
+function handleModalInvoiceUpload(input, bookId){
+  const file=input.files[0]; if(!file) return;
+  if(file.size>20*1024*1024){showToast('File terlalu besar (max 20MB)','error');return;}
+  const isPdf=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const data=ev.target.result;
+    const b=books.find(x=>x.id===bookId); if(!b) return;
+    // Save base64 immediately
+    b.invoiceData=data;
+    b.invoiceUrl=null;
+    saveData();
+    // Refresh modal
+    openDetail(bookId);
+    showToast(isPdf?'✓ PDF invoice tersimpan':'✓ Invoice tersimpan','success');
+    // Upload to Cloudinary in background
+    _uploadInvoiceToCloud(data, file.name, isPdf,
+      {get value(){return b.invoiceData;}, set value(v){b.invoiceData=v;}},
+      null
+    );
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeBookInvoice(bookId){
+  if(!confirm('Hapus invoice untuk buku ini?')) return;
+  const b=books.find(x=>x.id===bookId); if(!b) return;
+  b.invoiceData=null; b.invoiceUrl=null;
+  saveData(); openDetail(bookId);
+  showToast('Invoice dihapus');
+}
+
 function handleInvoiceUpload(input,prevId,dataId,pfx){
   const file=input.files[0];if(!file)return;
-  if(file.size>20*1024*1024){showToast('File too large (max 20MB)','error');return;}
+  if(file.size>20*1024*1024){showToast('File terlalu besar (max 20MB)','error');return;}
   const isPdf=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
   const reader=new FileReader();
   reader.onload=ev=>{
@@ -2634,51 +2680,74 @@ function handleInvoiceUpload(input,prevId,dataId,pfx){
     const ph=$(pfx+'InvoicePlaceholder');
     const cb=$(pfx+'InvoiceClearBtn');
     const d=$(dataId);
+
+    // Always store base64 immediately so Save works even if upload slow/fails
+    if(d) d.value=data;
+    if(cb) cb.style.display='block';
+    if(ph) ph.style.display='none';
+
     if(isPdf){
-      // PDF — show badge, not image
+      // Show PDF badge
       if(prevEl){prevEl.style.display='none';prevEl.classList.remove('show');}
       if(area){
         area.classList.add('has-photo');
-        // Remove old badge if any
-        const oldBadge=area.querySelector('.inv-pdf-badge');
-        if(oldBadge)oldBadge.remove();
+        const old=area.querySelector('.inv-pdf-badge');if(old)old.remove();
         const badge=document.createElement('div');
         badge.className='inv-pdf-badge';
         badge.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 10px;';
-        badge.innerHTML=`<div style="font-size:36px">📄</div><div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.1em;color:var(--cream);margin-top:6px;text-align:center;word-break:break-all">${file.name}</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:3px">PDF · ${(file.size/1024).toFixed(0)}KB</div>`;
+        badge.innerHTML=`<div style="font-size:36px">📄</div><div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.1em;color:var(--cream);margin-top:6px;text-align:center;word-break:break-all">${file.name}</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:3px">PDF · ${(file.size/1024).toFixed(0)}KB · tersimpan lokal</div>`;
         area.appendChild(badge);
       }
-      if(ph)ph.style.display='none';
-      if(d)d.value=data;
-      if(cb)cb.style.display='block';
-      showToast(`✓ PDF invoice terpasang: ${file.name}`,'success');
+      showToast('✓ PDF invoice terpasang','success');
+      // Upload PDF to Cloudinary raw endpoint
+      _uploadInvoiceToCloud(data,file.name,isPdf,d,null);
     } else {
-      // Image — show preview, upload to Cloudinary
+      // Show image preview
       if(prevEl){prevEl.src=data;prevEl.classList.add('show');prevEl.style.display='';}
       if(area){
         area.classList.add('has-photo');
-        const oldBadge=area.querySelector('.inv-pdf-badge');
-        if(oldBadge)oldBadge.remove();
+        const old=area.querySelector('.inv-pdf-badge');if(old)old.remove();
       }
-      if(ph)ph.style.display='none';
-      if(d)d.value=data;
-      if(cb)cb.style.display='block';
-      showToast(`✓ Invoice terpasang`,'success');
-      // Upload to Cloudinary in background
-      const titleEl=$(pfx==='a'?'aTitle':'eTitle');
-      const bookTitle=titleEl?titleEl.value.trim():'book';
-      const path=`invoices/inv_${sanitizeFilename(bookTitle)}_${Date.now()}`;
-      uploadToStorage(data, path, url=>{
-        if(d)d.value=url;
-        if(prevEl)prevEl.src=url;
-        showToast(`✓ Invoice tersimpan di cloud`,'success');
-      }, err=>{
-        // Keep base64 if Cloudinary fails — still usable locally
-        showToast(`Invoice tersimpan lokal`,'success');
-      });
+      showToast('✓ Invoice terpasang','success');
+      // Upload image to Cloudinary
+      _uploadInvoiceToCloud(data,file.name,isPdf,d,prevEl);
     }
   };
   reader.readAsDataURL(file);
+}
+
+function _uploadInvoiceToCloud(data,filename,isPdf,hiddenField,imgEl){
+  // Build blob from base64
+  const arr=data.split(','),mime=arr[0].match(/:(.*?);/)[1];
+  const bstr=atob(arr[1]);let n=bstr.length;
+  const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);
+  const blob=new Blob([u8],{type:mime});
+
+  const safe=filename.replace(/[^a-zA-Z0-9.\-_]/g,'_');
+  const fd=new FormData();
+  fd.append('file',blob,safe);
+  fd.append('upload_preset',CLOUDINARY_PRESET);
+  fd.append('folder','my-library/invoices');
+
+  // Use raw/upload for PDF, image/upload for images
+  const endpoint=isPdf
+    ?`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/raw/upload`
+    :`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+
+  fetch(endpoint,{method:'POST',body:fd})
+    .then(r=>r.json())
+    .then(res=>{
+      if(res.secure_url){
+        // Replace base64 with cloud URL — now survives Firebase sync
+        if(hiddenField) hiddenField.value=res.secure_url;
+        if(imgEl) imgEl.src=res.secure_url;
+        showToast('✓ Invoice tersimpan di cloud','success');
+      }
+    })
+    .catch(()=>{
+      // base64 already stored — will survive in localStorage
+      showToast('Invoice tersimpan lokal (cloud gagal)','');
+    });
 }
 function clearInvoice(pfx){
   const prev=$(pfx+'InvoicePreview'),area=$(pfx+'InvoiceArea');

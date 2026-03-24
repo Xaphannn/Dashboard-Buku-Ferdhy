@@ -1104,7 +1104,14 @@ function initFirebaseSync(){
     if(data.userBudget!==undefined)userBudget=data.userBudget;
     if(data.balanceHistory)balanceHistory=data.balanceHistory;
 
-    try{localStorage.setItem('myLibV5',JSON.stringify(books));}catch(e){}
+    // Save to localStorage — preserve any large binary fields already there
+    try{
+      localStorage.setItem('myLibV5',JSON.stringify(books));
+    }catch(e){
+      // Quota exceeded — save without base64 but keep URLs
+      const slim=books.map(b=>{const x={...b};if(x.photo&&x.photo.startsWith('data:'))x.photo=null;if(x.paymentProof&&x.paymentProof.startsWith('data:'))x.paymentProof=null;return x;});
+      try{localStorage.setItem('myLibV5',JSON.stringify(slim));}catch(e2){}
+    }
     try{localStorage.setItem('myLibBudget',String(userBudget));}catch(e){}
     try{localStorage.setItem('myLibBalanceHistory',JSON.stringify(balanceHistory));}catch(e){}
     localStorage.setItem('myLibLastSaved',data.lastSaved||Date.now());
@@ -2057,31 +2064,7 @@ function openDetail(id){
           </div>
         </div>
       </div>
-    </div>
-    ${(()=>{
-      const hasInv=!!(b.paymentProof);
-      return `<div style="grid-column:1/-1">
-        <div class="meta-key" style="margin-bottom:6px">🧾 Invoice / Bukti Bayar</div>
-        <div style="border:1px solid var(--bg-border);background:var(--bg-card2);padding:10px 12px">
-          ${hasInv
-            ?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-                <button onclick="viewBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(74,122,58,.4);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">👁 LIHAT</button>
-                <button onclick="dlBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(232,184,74,.3);background:rgba(232,184,74,.07);color:var(--gold);cursor:pointer">⬇ DOWNLOAD</button>
-                <button onclick="removeBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(180,60,60,.4);background:transparent;color:var(--red);cursor:pointer">✕ HAPUS</button>
-              </div>`
-            :`<div style="margin-bottom:8px;font-size:12px;color:var(--txt-dim);font-style:italic">Belum ada invoice — upload di bawah</div>`
-          }
-          <div class="photo-upload-area" id="modalInvArea_${b.id}" style="margin-bottom:0;min-height:60px;padding:10px">
-            <input type="file" accept="image/*,.pdf" onchange="handleModalInvoiceUpload(this,${b.id})">
-            <div id="modalInvPh_${b.id}">
-              <div class="photo-upload-icon" style="font-size:18px">🧾</div>
-              <div class="photo-upload-label" style="font-size:11px">${hasInv?'Ganti Invoice':'Upload Invoice'}</div>
-              <div class="photo-upload-sub">Klik atau drag · JPG, PNG, PDF · max 20MB</div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-    })()}` ;
+    </div>` ;
   }
   if(isOrdered(b)){
     const odf=b.orderDate?new Date(b.orderDate).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—';
@@ -2687,21 +2670,36 @@ function handleModalInvoiceUpload(input, bookId){
   const file=input.files[0]; if(!file) return;
   if(file.size>20*1024*1024){showToast('File terlalu besar (max 20MB)','error');return;}
   const isPdf=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
+  const b=books.find(x=>x.id===bookId); if(!b) return;
+
+  showToast('⬆ Mengupload invoice...','');
+
   const reader=new FileReader();
   reader.onload=ev=>{
-    const data=ev.target.result;
-    const b=books.find(x=>x.id===bookId); if(!b) return;
-    // Save base64 immediately
-    b.paymentProof=data;
-    saveData();
-    // Refresh modal
-    openDetail(bookId);
-    showToast(isPdf?'✓ PDF invoice tersimpan':'✓ Invoice tersimpan','success');
-    // Upload to Cloudinary in background
-    _uploadInvoiceToCloud(data, file.name, isPdf,
-      {get value(){return b.paymentProof;}, set value(v){b.paymentProof=v;}},
-      null
-    );
+    const base64=ev.target.result;
+
+    // Always register to gallery (regardless of Cloudinary result)
+    registerPhoto(base64,'proof',b.title);
+
+    // Upload to Cloudinary FIRST — then save URL (not base64) to Firebase
+    _uploadInvoiceToCloud(base64, file.name, isPdf, {
+      set value(url){
+        // Cloudinary succeeded — save URL (survives Firebase sync)
+        b.paymentProof=url;
+        saveData();
+        pushToFirebase();
+        openDetail(bookId);
+        showToast('✓ Invoice tersimpan','success');
+      }
+    }, null, ()=>{
+      // Cloudinary FAILED — save base64 as fallback, warn user
+      b.paymentProof=base64;
+      saveData();
+      // Don't push base64 to Firebase (too large, will be stripped anyway)
+      // Just keep in localStorage until Cloudinary works
+      openDetail(bookId);
+      showToast('⚠ Invoice tersimpan lokal. Coba upload ulang untuk sync ke cloud.','error');
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -2710,7 +2708,7 @@ function removeBookInvoice(bookId){
   if(!confirm('Hapus invoice untuk buku ini?')) return;
   const b=books.find(x=>x.id===bookId); if(!b) return;
   b.paymentProof=null;
-  saveData(); openDetail(bookId);
+  saveData(); pushToFirebase(); openDetail(bookId);
   showToast('Invoice dihapus');
 }
 
@@ -2762,8 +2760,7 @@ function handleInvoiceUpload(input,prevId,dataId,pfx){
   reader.readAsDataURL(file);
 }
 
-function _uploadInvoiceToCloud(data,filename,isPdf,hiddenField,imgEl){
-  // Build blob from base64
+function _uploadInvoiceToCloud(data,filename,isPdf,hiddenField,imgEl,onError){
   const arr=data.split(','),mime=arr[0].match(/:(.*?);/)[1];
   const bstr=atob(arr[1]);let n=bstr.length;
   const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);
@@ -2775,7 +2772,6 @@ function _uploadInvoiceToCloud(data,filename,isPdf,hiddenField,imgEl){
   fd.append('upload_preset',CLOUDINARY_PRESET);
   fd.append('folder','my-library/invoices');
 
-  // Use raw/upload for PDF, image/upload for images
   const endpoint=isPdf
     ?`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/raw/upload`
     :`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
@@ -2784,15 +2780,15 @@ function _uploadInvoiceToCloud(data,filename,isPdf,hiddenField,imgEl){
     .then(r=>r.json())
     .then(res=>{
       if(res.secure_url){
-        // Replace base64 with cloud URL — now survives Firebase sync
         if(hiddenField) hiddenField.value=res.secure_url;
         if(imgEl) imgEl.src=res.secure_url;
-        showToast('✓ Invoice tersimpan di cloud','success');
+      } else {
+        throw new Error(res.error?.message||'Upload failed');
       }
     })
-    .catch(()=>{
-      // base64 already stored — will survive in localStorage
-      showToast('Invoice tersimpan lokal (cloud gagal)','');
+    .catch(err=>{
+      console.error('Invoice cloud upload error:',err);
+      if(onError) onError(err);
     });
 }
 function clearInvoice(pfx){

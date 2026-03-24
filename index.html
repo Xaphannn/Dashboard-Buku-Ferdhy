@@ -756,11 +756,11 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
           </div>
         </div>
         <div class="form-divider"></div>
-        <div class="fsec-title">Payment Proof <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(optional)</span></div>
+        <div class="fsec-title">Invoice / Bukti Bayar <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(opsional)</span></div>
         <div class="photo-upload-area" id="aProofArea" style="margin-bottom:8px">
           <input type="file" accept="image/*" onchange="handleProofUpload(this,'aProofPreview','aProofData','a')" accept="image/*,.pdf">
           <img class="photo-preview" id="aProofPreview" src="" alt="">
-          <div id="aProofPlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Payment Proof</div><div class="photo-upload-sub">Click, drag, or paste image (Ctrl+V)</div></div>
+          <div id="aProofPlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">Click, drag, or paste image (Ctrl+V)</div></div>
         </div>
         <button class="photo-clear-btn" id="aProofClearBtn" onclick="clearProof('a')" style="display:none">✕ Remove Payment Proof</button>
         <input type="hidden" id="aProofData">
@@ -941,11 +941,11 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
         <input type="hidden" id="ePhotoData">
         <div id="eOwnedProofSection" style="display:none">
           <div class="form-divider"></div>
-          <div class="fsec-title">Payment Proof <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(optional)</span></div>
+          <div class="fsec-title">Invoice / Bukti Bayar <span style="font-size:12px;color:var(--txt-dim);font-weight:normal;text-transform:none;letter-spacing:0">(opsional)</span></div>
           <div class="photo-upload-area" id="eProofArea" style="margin-bottom:8px">
             <input type="file" accept="image/*" onchange="handleProofUpload(this,'eProofPreview','eProofData','e')" accept="image/*,.pdf">
             <img class="photo-preview" id="eProofPreview" src="" alt="">
-            <div id="eProofPlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Payment Proof</div><div class="photo-upload-sub">Click, drag, or paste image (Ctrl+V)</div></div>
+            <div id="eProofPlaceholder"><div class="photo-upload-icon">🧾</div><div class="photo-upload-label">Upload Invoice / Bukti Bayar</div><div class="photo-upload-sub">Click, drag, or paste image (Ctrl+V)</div></div>
           </div>
           <button class="photo-clear-btn" id="eProofClearBtn" onclick="clearProof('e')" style="display:none">✕ Remove Payment Proof</button>
           <input type="hidden" id="eProofData">
@@ -1023,7 +1023,6 @@ function saveData(){
       const c={...b};
       if(c.photo&&c.photo.startsWith('data:'))c.photo=null;
       if(c.paymentProof&&c.paymentProof.startsWith('data:'))c.paymentProof=null;
-      if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
       return c;
     });
     try{localStorage.setItem('myLibV5',JSON.stringify(slim));}
@@ -1039,8 +1038,7 @@ function pushToFirebase(){
     const c={...b};
     if(c.photo&&c.photo.startsWith('data:'))c.photo=null;
     if(c.paymentProof&&c.paymentProof.startsWith('data:'))c.paymentProof=null;
-    if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
-    if(c.invoiceData&&c.invoiceData.startsWith('data:'))c.invoiceData=null;
+    
     return c;
   });
   db.ref('library').set({books:booksClean,userBudget,balanceHistory,lastSaved:Date.now()})
@@ -1093,7 +1091,10 @@ function initFirebaseSync(){
       if(local){
         if(!cb.photo&&local.photo)cb.photo=local.photo;
         if(!cb.paymentProof&&local.paymentProof)cb.paymentProof=local.paymentProof;
-        if(!cb.invoiceData&&local.invoiceData)cb.invoiceData=local.invoiceData;
+        // merge legacy invoiceData into paymentProof
+        if(!cb.paymentProof&&local.invoiceData)cb.paymentProof=local.invoiceData;
+        if(!cb.paymentProof&&cb.invoiceData)cb.paymentProof=cb.invoiceData;
+
       }
       return cb;
     });
@@ -1574,7 +1575,7 @@ function renderTable(){
       const cond=book.condition||'';
       const bdf=book.orderDate?new Date(book.orderDate).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'2-digit'}):'—';
       const hasResi=book.resi&&book.resi.trim();
-      const hasInv=!!(book.invoiceUrl||book.invoiceData);
+      const hasInv=!!book.paymentProof;
       tr.innerHTML=`
         <td style="font-family:'Cinzel',serif;font-size:15px;color:var(--cream);text-align:center;padding:0 6px;font-weight:600">${book._rowNum}</td>
         <td style="width:18px;padding:0 2px"></td>
@@ -2029,15 +2030,38 @@ function openDetail(id){
         <optgroup label="E-Wallet"><option ${b.paymentMethod==='GoPay'?'selected':''}>GoPay</option><option ${b.paymentMethod==='OVO'?'selected':''}>OVO</option><option ${b.paymentMethod==='Dana'?'selected':''}>Dana</option><option ${b.paymentMethod==='ShopeePay'?'selected':''}>ShopeePay</option><option ${b.paymentMethod==='LinkAja'?'selected':''}>LinkAja</option><option ${b.paymentMethod==='Blu BCA'?'selected':''}>Blu BCA</option><option ${b.paymentMethod==='Jenius'?'selected':''}>Jenius</option><option ${b.paymentMethod==='E-Wallet Other'?'selected':''}>E-Wallet Other</option></optgroup>
         <optgroup label="Kartu"><option ${b.paymentMethod==='Kartu Kredit'?'selected':''}>Kartu Kredit</option><option ${b.paymentMethod==='Kartu Debit'?'selected':''}>Kartu Debit</option></optgroup>
       </select></div></div>
-    ${b.paymentProof?(
-      b.paymentProof.startsWith('data:application/pdf')
-        ?`<div style="grid-column:1/-1"><div class="meta-key" style="margin-bottom:4px">Payment Proof</div><div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--bg-border);background:var(--bg-card2);cursor:pointer" onclick="downloadProofDirect('${b.id}')"><span style="font-size:28px">📄</span><div><div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream)">PDF Payment Proof</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:2px">Click to download</div></div></div></div>`
-        :`<div style="grid-column:1/-1"><div class="meta-key" style="margin-bottom:4px">Payment Proof</div><img src="${b.paymentProof}" style="width:100%;max-height:110px;object-fit:contain;border:1px solid var(--bg-border);cursor:pointer" onclick="window.open(this.src,'_blank')" title="Click to enlarge"></div>`
-    ):''}
+    <div style="grid-column:1/-1">
+      <div class="meta-key" style="margin-bottom:6px">🧾 Invoice / Bukti Bayar</div>
+      <div style="border:1px solid var(--bg-border);background:var(--bg-card2);padding:10px 12px">
+        ${b.paymentProof
+          ?(() => {
+            const isPdf=b.paymentProof.startsWith('data:application/pdf')||b.paymentProof.includes('/raw/')||b.paymentProof.toLowerCase().endsWith('.pdf');
+            return `<div style="margin-bottom:8px">${isPdf
+              ?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(0,0,0,.2);border:1px solid var(--bg-border)"><span style="font-size:26px">📄</span><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--cream)">PDF Invoice</div></div>`
+              :`<img src="${b.paymentProof}" style="width:100%;max-height:120px;object-fit:contain;border:1px solid var(--bg-border);cursor:pointer;display:block" onclick="window.open(this.src,'_blank')" title="Klik untuk perbesar">`
+            }</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <button onclick="viewBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(74,122,58,.4);background:rgba(74,122,58,.1);color:var(--green-lt);cursor:pointer">👁 LIHAT</button>
+              <button onclick="dlBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(232,184,74,.3);background:rgba(232,184,74,.07);color:var(--gold);cursor:pointer">⬇ DOWNLOAD</button>
+              <button onclick="removeBookInvoice(${b.id})" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.08em;padding:5px 12px;border:1px solid rgba(180,60,60,.4);background:transparent;color:var(--red);cursor:pointer">✕ HAPUS</button>
+            </div>`;
+          })()
+          :`<div style="font-size:12px;color:var(--txt-dim);font-style:italic;margin-bottom:8px">Belum ada invoice — upload di bawah</div>`
+        }
+        <div class="photo-upload-area" id="modalInvArea_${b.id}" style="margin-top:8px;min-height:55px;padding:8px">
+          <input type="file" accept="image/*,.pdf" onchange="handleModalInvoiceUpload(this,${b.id})">
+          <div id="modalInvPh_${b.id}">
+            <div class="photo-upload-icon" style="font-size:16px">🧾</div>
+            <div class="photo-upload-label" style="font-size:11px">${b.paymentProof?'Ganti Invoice':'Upload Invoice'}</div>
+            <div class="photo-upload-sub">Klik atau drag · JPG, PNG, PDF · max 20MB</div>
+          </div>
+        </div>
+      </div>
+    </div>
     ${(()=>{
-      const hasInv=!!(b.invoiceUrl||b.invoiceData);
+      const hasInv=!!(b.paymentProof);
       return `<div style="grid-column:1/-1">
-        <div class="meta-key" style="margin-bottom:6px">🧾 Invoice Pembelian</div>
+        <div class="meta-key" style="margin-bottom:6px">🧾 Invoice / Bukti Bayar</div>
         <div style="border:1px solid var(--bg-border);background:var(--bg-card2);padding:10px 12px">
           ${hasInv
             ?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
@@ -2061,7 +2085,7 @@ function openDetail(id){
   }
   if(isOrdered(b)){
     const odf=b.orderDate?new Date(b.orderDate).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—';
-    const hasInv=!!(b.invoiceUrl||b.invoiceData);
+    const hasInv=!!(b.paymentProof);
     meta+=`
     <div><div class="meta-key">Order Date</div><div class="meta-val">${odf}</div></div>
     <div><div class="meta-key">Payment</div><div class="meta-val">${b.paymentMethod?`<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.06em;padding:2px 7px;border:1px solid rgba(106,154,184,.3);color:var(--blue-lt);background:rgba(42,74,110,.12)">${b.paymentMethod}</span>`:'—'}</div></div>
@@ -2237,7 +2261,6 @@ function addBook(){
     coverType:$('aCoverType').value||'HC',
     store:$('aStore').value||'',
     paymentMethod:status==='owned'?($('aPaymentMethod').value||''):status==='ordered'?($('aOrderPayment')?$('aOrderPayment').value||null:null):null,
-    paymentProof:status==='owned'?($('aProofData').value||null):null,
     link:$('aLink').value.trim(),
     blurb:$('aBlurb').value.trim(),
     status,
@@ -2249,7 +2272,7 @@ function addBook(){
     orderDate:status==='ordered'?($('aOrderDate')?$('aOrderDate').value||null:null):null,
     resi:status==='ordered'?($('aResi')?$('aResi').value.trim()||null:null):null,
     ekspedisi:status==='ordered'?($('aEkspedisi')?$('aEkspedisi').value||null:null):null,
-    invoiceData:status==='ordered'?($('aInvoiceData')?$('aInvoiceData').value||null:null):null,
+    paymentProof:status==='ordered'?($('aInvoiceData')?$('aInvoiceData').value||null:null):status==='owned'?($('aProofData').value||null):null,
   });
   // Register cover photo in DB if uploaded
   const coverData=$('aPhotoData').value;
@@ -2300,7 +2323,7 @@ function saveEdit(){
     b.paymentMethod=$('eOrderPayment')?$('eOrderPayment').value||null:b.paymentMethod;
     b.resi=$('eResi')?$('eResi').value.trim()||null:b.resi;
     b.ekspedisi=$('eEkspedisi')?$('eEkspedisi').value||null:b.ekspedisi;
-    const invD=$('eInvoiceData');if(invD&&invD.value)b.invoiceData=invD.value;
+    const invD=$('eInvoiceData');if(invD&&invD.value)b.paymentProof=invD.value;
   }
   const pd=$('ePhotoData').value;b.photo=pd||null;
   saveData();renderAll();closeEditPanel();
@@ -2350,15 +2373,15 @@ function loadEditForm(id){
   if($('eOrderPayment'))$('eOrderPayment').value=b.paymentMethod||'';
   if($('eResi'))$('eResi').value=b.resi||'';
   if($('eEkspedisi'))$('eEkspedisi').value=b.ekspedisi||'';
-  const hasInv=!!(b.invoiceUrl||b.invoiceData);
+  const hasInv=!!(b.paymentProof);
   if($('eInvoicePreview')){
-    const isPdfInv=(b.invoiceData||'').startsWith('data:application/pdf');
-    $('eInvoicePreview').src=b.invoiceUrl||b.invoiceData||'';
+    const isPdfInv=(b.paymentProof||'').startsWith('data:application/pdf');
+    $('eInvoicePreview').src=b.paymentProof||'';
     $('eInvoicePreview').style.display=(hasInv&&!isPdfInv)?'block':'none';
   }
   if($('eInvoicePlaceholder'))$('eInvoicePlaceholder').style.display=hasInv?'none':'block';
   if($('eInvoiceClearBtn'))$('eInvoiceClearBtn').style.display=hasInv?'block':'none';
-  if($('eInvoiceData'))$('eInvoiceData').value=b.invoiceData||'';
+  if($('eInvoiceData'))$('eInvoiceData').value=b.paymentProof||'';
   const prev=$('ePhotoPreview'),area=$('ePhotoArea'),ph=$('ePhotoPlaceholder'),pd=$('ePhotoData');
   if(b.photo){prev.src=b.photo;prev.classList.add('show');area.classList.add('has-photo');ph.style.display='none';pd.value=b.photo;$('eClearBtn').style.display='block';}
   else{prev.classList.remove('show');area.classList.remove('has-photo');ph.style.display='block';pd.value='';$('eClearBtn').style.display='none';}
@@ -2669,15 +2692,14 @@ function handleModalInvoiceUpload(input, bookId){
     const data=ev.target.result;
     const b=books.find(x=>x.id===bookId); if(!b) return;
     // Save base64 immediately
-    b.invoiceData=data;
-    b.invoiceUrl=null;
+    b.paymentProof=data;
     saveData();
     // Refresh modal
     openDetail(bookId);
     showToast(isPdf?'✓ PDF invoice tersimpan':'✓ Invoice tersimpan','success');
     // Upload to Cloudinary in background
     _uploadInvoiceToCloud(data, file.name, isPdf,
-      {get value(){return b.invoiceData;}, set value(v){b.invoiceData=v;}},
+      {get value(){return b.paymentProof;}, set value(v){b.paymentProof=v;}},
       null
     );
   };
@@ -2687,7 +2709,7 @@ function handleModalInvoiceUpload(input, bookId){
 function removeBookInvoice(bookId){
   if(!confirm('Hapus invoice untuk buku ini?')) return;
   const b=books.find(x=>x.id===bookId); if(!b) return;
-  b.invoiceData=null; b.invoiceUrl=null;
+  b.paymentProof=null;
   saveData(); openDetail(bookId);
   showToast('Invoice dihapus');
 }
@@ -2793,7 +2815,7 @@ function clearInvoice(pfx){
 // ── Invoice View / Download ──
 function viewBookInvoice(id){
   const b=books.find(x=>x.id===id);if(!b)return;
-  const src=b.invoiceUrl||b.invoiceData;if(!src){showToast('No invoice found','error');return;}
+  const src=b.paymentProof;if(!src){showToast('Tidak ada invoice','error');return;}
   const isPdf=src.startsWith('data:application/pdf')||src.includes('/raw/')||src.toLowerCase().endsWith('.pdf');
   if(isPdf){
     // Download directly for PDF
@@ -2805,7 +2827,7 @@ function viewBookInvoice(id){
 }
 function dlBookInvoice(id){
   const b=books.find(x=>x.id===id);if(!b)return;
-  const src=b.invoiceUrl||b.invoiceData;if(!src){showToast('No invoice found','error');return;}
+  const src=b.paymentProof;if(!src){showToast('Tidak ada invoice','error');return;}
   const fname=(b.title||'Invoice').replace(/[^a-zA-Z0-9]/g,'_')+'_Invoice';
   if(src.startsWith('data:')){
     try{

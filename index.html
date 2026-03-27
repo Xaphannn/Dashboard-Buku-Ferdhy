@@ -238,8 +238,8 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
 @keyframes modalIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .modal-ornament{position:absolute;top:0;left:0;right:0;height:2px}
 .modal-top{display:flex}
-.modal-cover-area{width:130px;flex-shrink:0;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;min-height:170px;border-right:1px solid var(--bg-border);overflow:hidden}
-.modal-cover-img{width:100%;height:100%;object-fit:cover}
+.modal-cover-area{width:140px;flex-shrink:0;background:var(--bg-card2);display:flex;align-items:flex-start;justify-content:center;overflow:hidden;padding:0}
+.modal-cover-img{width:100%;height:100%;object-fit:cover;display:block}
 .modal-cover-ph{font-size:44px;color:var(--txt-dim)}
 .modal-header{padding:18px 22px 12px;flex:1}
 .modal-badge{font-family:'Cinzel',serif;font-size:8px;letter-spacing:.16em;padding:2px 8px;border:1px solid;display:inline-block;margin-bottom:8px}
@@ -251,9 +251,11 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
 .modal-author-nm{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--txt-muted)}
 .modal-body{padding:14px 22px;border-top:1px solid var(--bg-border)}
 .modal-blurb{font-size:14px;color:var(--txt-muted);line-height:1.7;margin-bottom:12px;font-style:italic;border-left:2px solid var(--gold-mut);padding-left:10px}
-.modal-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.meta-key{font-family:'Cinzel',serif;font-size:6.5px;letter-spacing:.13em;color:var(--txt-dim);margin-bottom:2px}
-.meta-val{font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream)}
+.modal-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.meta-key{font-family:'Cinzel',serif;font-size:6.5px;letter-spacing:.13em;color:var(--txt-dim);margin-bottom:3px;text-transform:uppercase}
+.meta-val{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--cream)}
+.meta-divider{grid-column:1/-1;height:1px;background:var(--bg-border);margin:4px 0}
+.meta-section-title{grid-column:1/-1;font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.14em;color:var(--gold-mut);text-transform:uppercase;padding-bottom:4px;border-bottom:1px solid rgba(212,168,71,.2);margin-top:4px}
 .meta-select{background:var(--bg-card2);border:1px solid var(--bg-border);color:var(--cream);font-family:'EB Garamond',serif;font-size:13px;padding:4px 8px;outline:none;width:100%;cursor:pointer;margin-top:2px;appearance:none}
 .meta-select:focus{border-color:var(--gold-mut)}
 .modal-footer{padding:10px 22px 14px;display:flex;gap:6px;justify-content:flex-end;border-top:1px solid rgba(58,42,24,.3);flex-wrap:wrap}
@@ -572,6 +574,7 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
 <div class="modal-overlay" id="detailModal" onclick="closeDetailOverlay(event)">
   <div class="modal">
     <div class="modal-ornament" id="modalOrnament"></div>
+    <!-- REVIEW CARD HEADER: cover + title block side by side -->
     <div class="modal-top">
       <div class="modal-cover-area" id="modalCover TypeArea"></div>
       <div class="modal-header">
@@ -579,10 +582,16 @@ header::after{content:'';position:absolute;top:-60px;right:-60px;width:320px;hei
         <div class="modal-num" id="dNum"></div>
         <div class="modal-title" id="dTitle"></div>
         <div class="modal-author-nm" id="dAuthor"></div>
+        <!-- Quick info strip inside header -->
+        <div id="dQuickInfo" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div>
       </div>
     </div>
+    <!-- BLURB as book summary section -->
     <div class="modal-body">
-      <div class="modal-blurb" id="dBlurb"></div>
+      <div style="margin-bottom:10px">
+        <div style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:.13em;color:var(--gold-mut);text-transform:uppercase;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid rgba(212,168,71,.2)">Book Summary</div>
+        <div class="modal-blurb" id="dBlurb"></div>
+      </div>
       <div class="modal-meta" id="dMeta"></div>
     </div>
     <div class="modal-footer">
@@ -1770,9 +1779,10 @@ function renderFinance(){
   const owned=books.filter(isOwned);
   const wishlist=books.filter(isWishlist);
   const ordered=books.filter(isOrdered);
-  const spent=owned.reduce((s,b)=>s+b.price,0);
-  const wishlistVal=wishlist.reduce((s,b)=>s+b.price,0);
+  const spentOwned=owned.reduce((s,b)=>s+b.price,0);
   const ordVal=ordered.reduce((s,b)=>s+b.price,0);
+  const spent=spentOwned+ordVal; // owned + ordered both count as spending
+  const wishlistVal=wishlist.reduce((s,b)=>s+b.price,0);
   const saldo=userBudget;
   const sisaSaldo=saldo-spent;
 
@@ -1790,7 +1800,7 @@ function renderFinance(){
     <div class="fin-card">
       <div class="fin-label">📚 Book Spending</div>
       <div class="fin-val" style="color:var(--green-lt)">${fmt(spent)}</div>
-      <div class="fin-sub">${owned.length} books owned${saldo>0?` · ${Math.round(spent/saldo*100)}% of balance`:''}</div>
+      <div class="fin-sub">${owned.length} owned + ${ordered.length} ordered${saldo>0?` · ${Math.round(spent/saldo*100)}% of balance`:''}</div>
     </div>
     <div class="fin-card">
       <div class="fin-label">💳 Remaining Balance</div>
@@ -1809,10 +1819,10 @@ function renderFinance(){
     </div>`;
 
   // Allocation donut chart (SVG)
-  const total4=spent+wishlistVal+ordVal+(sisaSaldo>0?sisaSaldo:0);
+  const total4=spentOwned+ordVal+wishlistVal+(sisaSaldo>0?sisaSaldo:0);
   const segments=[
-    {label:'Spent',val:spent,color:'var(--green-lt)'},
-    {label:'Orders',val:ordVal,color:'var(--orange)'},
+    {label:'Owned',val:spentOwned,color:'var(--green-lt)'},
+    {label:'Ordered',val:ordVal,color:'var(--orange)'},
     {label:'Wishlist',val:wishlistVal,color:'var(--brown-lt)'},
     {label:'Remaining',val:sisaSaldo>0?sisaSaldo:0,color:'var(--blue-lt)'},
   ].filter(s=>s.val>0);
@@ -2004,15 +2014,24 @@ function openDetail(id){
   $('dNum').textContent=`No. ${b.no}${isWishlist(b)&&b.priority?' · Priority #'+b.priority:''}`;
   $('dTitle').textContent=b.title;$('dAuthor').textContent=b.author;$('dBlurb').textContent=b.blurb||'—';
   const bdf=b.buyDate?new Date(b.buyDate).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—';
+  // Quick info strip (header area)
+  const quickInfo=[
+    b.genre?`<span style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.06em;padding:2px 8px;border:1px solid var(--bg-border);color:var(--txt-muted)">${b.genre}</span>`:'',
+    `<span style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.06em;padding:2px 8px;border:1px solid rgba(212,168,71,.3);color:var(--gold)">${fmt(b.price)}</span>`,
+    `<span class="cover-badge ${(b.coverType==='HC'||b.coverType==='HC-SE')?'hc-badge':'sc-badge'}">${b.coverType||'HC'}</span>`,
+  ].filter(Boolean).join('');
+  const qi=$('dQuickInfo');if(qi)qi.innerHTML=quickInfo;
+
   let meta=`
-    <div><div class="meta-key">Genre</div><div class="meta-val">${b.genre||'—'}</div></div>
+    <div class="meta-section-title">Book Info</div>
     <div><div class="meta-key">Publisher</div><div class="meta-val">${b.publisher||'—'}</div></div>
-    <div><div class="meta-key">Price</div><div class="meta-val" style="color:var(--gold)">${fmt(b.price)}</div></div>
-    <div><div class="meta-key">Store</div><div class="meta-val">${b.store||'—'}</div></div>
-    <div><div class="meta-key">Cover Type</div><div class="meta-val"><span class="cover-badge ${(b.coverType==='HC'||b.coverType==='HC-SE')?'hc-badge':'sc-badge'}">${b.coverType||'HC'}</span></div></div>`;
+    <div><div class="meta-key">Country</div><div class="meta-val">${b.publisherCountry||'—'}</div></div>
+    <div><div class="meta-key">ISBN</div><div class="meta-val" style="font-size:13px;letter-spacing:.04em">${b.isbn||'—'}</div></div>
+    <div><div class="meta-key">Store</div><div class="meta-val">${b.store||'—'}</div></div>`;
   if(isOwned(b)){
     const canRate=b.readStatus==='Read';
     meta+=`
+    <div class="meta-section-title">Purchase Details</div>
     <div><div class="meta-key">Purchase Date</div><div class="meta-val">${bdf}</div></div>
     <div><div class="meta-key">Condition</div>
       <div><select class="meta-select" onchange="updateField(${b.id},'condition',this.value)">
@@ -2067,6 +2086,7 @@ function openDetail(id){
     </div>` ;
   }
   if(isOrdered(b)){
+    meta+=`<div class="meta-section-title">Order Details</div>`;
     const odf=b.orderDate?new Date(b.orderDate).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—';
     const hasInv=!!(b.paymentProof);
     meta+=`
@@ -2100,10 +2120,11 @@ function openDetail(id){
       </div>
     </div>`;
   } else if(!isOwned(b)){
-    meta+=`<div><div class="meta-key">ISBN</div><div class="meta-val" style="font-size:15px">${b.isbn||'—'}</div></div>`;
+    // ISBN already in Book Info section above
   }
   if(isOwned(b)){
     meta+=`
+    <div class="meta-section-title">Loan Status</div>
     <div style="grid-column:1/-1">
       <div class="meta-key" style="margin-bottom:6px">📚 Book Loan</div>
       <div style="border:1px solid var(--bg-border);background:var(--bg-card2);padding:10px 12px;border-radius:0">
@@ -2130,7 +2151,7 @@ function openDetail(id){
       </div>
     </div>`;
   }
-  meta+=`<div><div class="meta-key">Publisher Country</div><div class="meta-val">${b.publisherCountry||'—'}</div></div>`;
+
   $('dMeta').innerHTML=meta;
   $('dLink').href=b.link||'#';
   $('dToggleOwned').textContent=isOwned(b)?'↩ To Wishlist':'✓ Mark as Owned';
@@ -2688,15 +2709,15 @@ function handleModalInvoiceUpload(input, bookId){
         b.paymentProof=url;
         saveData();
         pushToFirebase();
+        renderAll();
         openDetail(bookId);
-        showToast('✓ Invoice tersimpan','success');
+        showToast('✓ Invoice tersimpan & masuk galeri','success');
       }
     }, null, ()=>{
       // Cloudinary FAILED — save base64 as fallback, warn user
       b.paymentProof=base64;
       saveData();
-      // Don't push base64 to Firebase (too large, will be stripped anyway)
-      // Just keep in localStorage until Cloudinary works
+      renderAll();
       openDetail(bookId);
       showToast('⚠ Invoice tersimpan lokal. Coba upload ulang untuk sync ke cloud.','error');
     });

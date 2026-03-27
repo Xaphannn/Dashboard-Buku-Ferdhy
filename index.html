@@ -2695,18 +2695,17 @@ function handleModalInvoiceUpload(input, bookId){
 
   showToast('⬆ Mengupload invoice...','');
 
- const reader=new FileReader();
+  const reader=new FileReader();
   reader.onload=ev=>{
     const base64=ev.target.result;
-
-    const ext = isPdf ? '.pdf' : '.jpg';
-    const d = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
-    const autoName = `invoice_${d}_${sanitizeFilename(b.title)}${ext}`;
 
     // Always register to gallery (regardless of Cloudinary result)
     registerPhoto(base64,'proof',b.title);
 
     // Upload to Cloudinary FIRST — then save URL (not base64) to Firebase
+    const ext = isPdf ? '.pdf' : '.jpg';
+    const d = new Date().toLocaleDateString('id-ID').replace(/\//g,'-');
+    const autoName = `invoice_${d}_${sanitizeFilename(b.title)}${ext}`;
     _uploadInvoiceToCloud(base64, file.name, isPdf, {
       set value(url){
         // Cloudinary succeeded — save URL (survives Firebase sync)
@@ -2744,11 +2743,6 @@ function handleInvoiceUpload(input,prevId,dataId,pfx){
   const reader=new FileReader();
   reader.onload=ev=>{
     const data=ev.target.result;
-    const titleEl = $(pfx+'Title');
-    const bookTitle = titleEl ? titleEl.value.trim() : 'book';
-    const ext = isPdf ? '.pdf' : '.jpg';
-    const d = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
-    const autoName = `invoice_${d}_${sanitizeFilename(bookTitle)}${ext}`;
     const prevEl=$(prevId);
     const area=prevEl?.closest('.photo-upload-area')||$(pfx+'InvoiceArea');
     const ph=$(pfx+'InvoicePlaceholder');
@@ -2760,7 +2754,7 @@ function handleInvoiceUpload(input,prevId,dataId,pfx){
     if(cb) cb.style.display='block';
     if(ph) ph.style.display='none';
 
-if(isPdf){
+    if(isPdf){
       // Show PDF badge
       if(prevEl){prevEl.style.display='none';prevEl.classList.remove('show');}
       if(area){
@@ -2769,12 +2763,12 @@ if(isPdf){
         const badge=document.createElement('div');
         badge.className='inv-pdf-badge';
         badge.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 10px;';
-        badge.innerHTML=`<div style="font-size:36px">📄</div><div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.1em;color:var(--cream);margin-top:6px;text-align:center;word-break:break-all">${autoName}</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:3px">PDF · ${(file.size/1024).toFixed(0)}KB · tersimpan lokal</div>`;
+        badge.innerHTML=`<div style="font-size:36px">📄</div><div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:.1em;color:var(--cream);margin-top:6px;text-align:center;word-break:break-all">${file.name}</div><div style="font-family:'Cinzel',serif;font-size:8px;color:var(--txt-dim);margin-top:3px">PDF · ${(file.size/1024).toFixed(0)}KB · tersimpan lokal</div>`;
         area.appendChild(badge);
       }
       showToast('✓ PDF invoice terpasang','success');
       // Upload PDF to Cloudinary raw endpoint
-      _uploadInvoiceToCloud(data,autoName,isPdf,d,null);
+      _uploadInvoiceToCloud(data,file.name,isPdf,d,null);
     } else {
       // Show image preview
       if(prevEl){prevEl.src=data;prevEl.classList.add('show');prevEl.style.display='';}
@@ -2784,7 +2778,11 @@ if(isPdf){
       }
       showToast('✓ Invoice terpasang','success');
       // Upload image to Cloudinary
-      _uploadInvoiceToCloud(data,autoName,isPdf,d,prevEl);
+      const titleVal = document.getElementById(pfx+'Title')?.value || 'book';
+const ext = isPdf ? '.pdf' : '.jpg';
+const dStr = new Date().toLocaleDateString('id-ID').replace(/\//g,'-');
+const autoName = `invoice_${dStr}_${sanitizeFilename(titleVal)}${ext}`;
+_uploadInvoiceToCloud(data, autoName, isPdf, dStr, prevEl);
     }
   };
   reader.readAsDataURL(file);
@@ -3516,6 +3514,14 @@ function getDefaultBooks(){
 // ═══════════════════════════════════════════════════════
 renderAll();
 initFirebaseSync(); // Start realtime sync with Firebase
+  function sanitizeFilename(str) {
+  if(!str) return 'file';
+  return str.toString().toLowerCase()
+    .replace(/\s+/g, '-') 
+    .replace(/[^\w\-.]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 </script>
 </body>
 </html>

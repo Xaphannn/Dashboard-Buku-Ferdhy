@@ -2489,7 +2489,7 @@ function registerPhoto(data,type,bookTitle,extraInfo){
     const d=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
     filename=`bukti_${d}_${sanitizeFilename(bookTitle||'book')}`;
   }
-  const entry={id:Date.now(),type,filename,bookTitle:bookTitle||'',date:now.toISOString(),size:Math.round(data.length*0.75/1024)+'KB'};
+  const entry={id:Date.now(),type,filename,bookTitle:bookTitle||'',date:now.toISOString(),size:Math.round(data.length*0.75/1024)+'KB', src: data};
   photoDb.unshift(entry);
   if(photoDb.length>200)photoDb.pop();
   savePhotoDb();
@@ -3008,7 +3008,7 @@ function getAllGalleryItems(){
     }
   });
   // 2. Payment proofs from books
-  books.filter(isOwned).forEach(b=>{
+  books.forEach(b=>{
     if(b.paymentProof){
       items.push({
         id:'proof_'+b.id,

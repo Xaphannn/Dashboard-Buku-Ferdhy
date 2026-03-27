@@ -2699,17 +2699,19 @@ function handleModalInvoiceUpload(input, bookId){
   reader.onload=ev=>{
     const base64=ev.target.result;
 
-    // Always register to gallery (regardless of Cloudinary result)
-    registerPhoto(base64,'proof',b.title);
-
-    // Upload to Cloudinary FIRST — then save URL (not base64) to Firebase
+    // ── Auto rename: "Payment Proof - (Judul Buku)" ──
     const ext = isPdf ? '.pdf' : '.jpg';
-    const d = new Date().toLocaleDateString('id-ID').replace(/\//g,'-');
-    const autoName = `invoice_${d}_${sanitizeFilename(b.title)}${ext}`;
-    _uploadInvoiceToCloud(base64, file.name, isPdf, {
+    const cloudName = `Payment Proof - ${b.title}`;
+    const cloudPublicId = `payment-proof-${sanitizeFilename(b.title)}`;
+
+    // Register to gallery with proper name
+    registerPhoto(base64, 'proof', cloudName);
+
+    // Upload to Cloudinary with correct public_id
+    _uploadInvoiceToCloud(base64, cloudPublicId+ext, isPdf, {
       set value(url){
-        // Cloudinary succeeded — save URL (survives Firebase sync)
         b.paymentProof=url;
+        b.invoicePublicId=cloudPublicId; // store public_id for deletion later
         saveData();
         pushToFirebase();
         renderAll();
@@ -2717,7 +2719,6 @@ function handleModalInvoiceUpload(input, bookId){
         showToast('✓ Invoice tersimpan & masuk galeri','success');
       }
     }, null, ()=>{
-      // Cloudinary FAILED — save base64 as fallback, warn user
       b.paymentProof=base64;
       saveData();
       renderAll();
@@ -2731,9 +2732,36 @@ function handleModalInvoiceUpload(input, bookId){
 function removeBookInvoice(bookId){
   if(!confirm('Hapus invoice untuk buku ini?')) return;
   const b=books.find(x=>x.id===bookId); if(!b) return;
+  const oldProof=b.paymentProof;
+  const oldPublicId=b.invoicePublicId;
+
+  // 1. Remove from photoDb (gallery)
+  const bookTitle=b.title;
+  photoDb=photoDb.filter(p=>{
+    // Remove entries that match this book's proof by src or title
+    const matchesSrc=p.src&&oldProof&&p.src===oldProof;
+    const matchesTitle=p.type==='proof'&&p.bookTitle&&p.bookTitle.includes(bookTitle);
+    return !matchesSrc&&!matchesTitle;
+  });
+  savePhotoDb();
+
+  // 2. Delete from Cloudinary (fire & forget — no API key needed for signed delete,
+  //    but we can invalidate via upload overwrite; just notify user)
+  if(oldProof&&(oldProof.startsWith('https://res.cloudinary.com')||oldProof.startsWith('https://cloudinary.com'))){
+    // Cloudinary delete requires signed request from backend — not possible from pure browser.
+    // Mark as deleted so it won't show in gallery. User can clean up Cloudinary manually.
+    showToast('Invoice dihapus dari galeri. File di Cloudinary perlu dihapus manual jika diperlukan.','');
+  } else {
+    showToast('Invoice dihapus','');
+  }
+
+  // 3. Clear from book
   b.paymentProof=null;
-  saveData(); pushToFirebase(); openDetail(bookId);
-  showToast('Invoice dihapus');
+  b.invoicePublicId=null;
+  saveData();
+  pushToFirebase();
+  renderAll();
+  openDetail(bookId);
 }
 
 function handleInvoiceUpload(input,prevId,dataId,pfx){
@@ -2778,11 +2806,11 @@ function handleInvoiceUpload(input,prevId,dataId,pfx){
       }
       showToast('✓ Invoice terpasang','success');
       // Upload image to Cloudinary
-      const titleVal = document.getElementById(pfx+'Title')?.value || 'book';
-const ext = isPdf ? '.pdf' : '.jpg';
-const dStr = new Date().toLocaleDateString('id-ID').replace(/\//g,'-');
-const autoName = `invoice_${dStr}_${sanitizeFilename(titleVal)}${ext}`;
-_uploadInvoiceToCloud(data, autoName, isPdf, dStr, prevEl);
+      const titleVal = document.getElementById(pfx+'Title')?.value || (editingId ? (books.find(x=>x.id===editingId)?.title||'book') : 'book');
+      const cloudName = `Payment Proof - ${titleVal}`;
+      const cloudPublicId = `payment-proof-${sanitizeFilename(titleVal)}`;
+      const autoName = cloudPublicId + ext;
+      _uploadInvoiceToCloud(data, autoName, isPdf, dStr, prevEl);
     }
   };
   reader.readAsDataURL(file);

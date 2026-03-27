@@ -2480,16 +2480,16 @@ function savePhotoDb(){localStorage.setItem('myLibPhotoDb',JSON.stringify(photoD
 function sanitizeFilename(str){return str.replace(/[^a-zA-Z0-9\s\-_]/g,'').replace(/\s+/g,'-').substring(0,60);}
 
 function registerPhoto(data,type,bookTitle,extraInfo){
-  // type: 'cover' or 'proof'
   const now=new Date();
-  let filename;
+  let filename, title;
   if(type==='cover'){
-    filename=`cover_${sanitizeFilename(bookTitle||'book')}_${now.getFullYear()}`;
+    filename=`Cover — ${bookTitle||'Book'}`;
+    title=filename;
   } else {
-    const d=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
-    filename=`bukti_${d}_${sanitizeFilename(bookTitle||'book')}`;
+    filename=`Payment Proof — ${bookTitle||'Book'}`;
+    title=filename;
   }
-  const entry={id:Date.now(),type,filename,bookTitle:bookTitle||'',date:now.toISOString(),size:Math.round(data.length*0.75/1024)+'KB', src: data};
+  const entry={id:Date.now(),type,filename,title,bookTitle:bookTitle||'',date:now.toISOString(),size:Math.round(data.length*0.75/1024)+'KB',src:data};
   photoDb.unshift(entry);
   if(photoDb.length>200)photoDb.pop();
   savePhotoDb();
@@ -2699,19 +2699,17 @@ function handleModalInvoiceUpload(input, bookId){
   reader.onload=ev=>{
     const base64=ev.target.result;
 
-    // ── Auto rename: "Payment Proof - (Judul Buku)" ──
+    // Gallery title = "Payment Proof — (Judul Buku)"
+    const proofTitle = `Payment Proof — ${b.title}`;
+    registerPhoto(base64, 'proof', b.title);
+
+    // Upload to Cloudinary with clean public_id
     const ext = isPdf ? '.pdf' : '.jpg';
-    const cloudName = `Payment Proof - ${b.title}`;
-    const cloudPublicId = `payment-proof-${sanitizeFilename(b.title)}`;
-
-    // Register to gallery with proper name
-    registerPhoto(base64, 'proof', cloudName);
-
-    // Upload to Cloudinary with correct public_id
+    const cloudPublicId = `Payment Proof — ${b.title}`;
     _uploadInvoiceToCloud(base64, cloudPublicId+ext, isPdf, {
       set value(url){
+        // Cloudinary succeeded — save URL (survives Firebase sync)
         b.paymentProof=url;
-        b.invoicePublicId=cloudPublicId; // store public_id for deletion later
         saveData();
         pushToFirebase();
         renderAll();
@@ -2719,6 +2717,7 @@ function handleModalInvoiceUpload(input, bookId){
         showToast('✓ Invoice tersimpan & masuk galeri','success');
       }
     }, null, ()=>{
+      // Cloudinary FAILED — save base64 as fallback, warn user
       b.paymentProof=base64;
       saveData();
       renderAll();
@@ -2732,36 +2731,9 @@ function handleModalInvoiceUpload(input, bookId){
 function removeBookInvoice(bookId){
   if(!confirm('Hapus invoice untuk buku ini?')) return;
   const b=books.find(x=>x.id===bookId); if(!b) return;
-  const oldProof=b.paymentProof;
-  const oldPublicId=b.invoicePublicId;
-
-  // 1. Remove from photoDb (gallery)
-  const bookTitle=b.title;
-  photoDb=photoDb.filter(p=>{
-    // Remove entries that match this book's proof by src or title
-    const matchesSrc=p.src&&oldProof&&p.src===oldProof;
-    const matchesTitle=p.type==='proof'&&p.bookTitle&&p.bookTitle.includes(bookTitle);
-    return !matchesSrc&&!matchesTitle;
-  });
-  savePhotoDb();
-
-  // 2. Delete from Cloudinary (fire & forget — no API key needed for signed delete,
-  //    but we can invalidate via upload overwrite; just notify user)
-  if(oldProof&&(oldProof.startsWith('https://res.cloudinary.com')||oldProof.startsWith('https://cloudinary.com'))){
-    // Cloudinary delete requires signed request from backend — not possible from pure browser.
-    // Mark as deleted so it won't show in gallery. User can clean up Cloudinary manually.
-    showToast('Invoice dihapus dari galeri. File di Cloudinary perlu dihapus manual jika diperlukan.','');
-  } else {
-    showToast('Invoice dihapus','');
-  }
-
-  // 3. Clear from book
   b.paymentProof=null;
-  b.invoicePublicId=null;
-  saveData();
-  pushToFirebase();
-  renderAll();
-  openDetail(bookId);
+  saveData(); pushToFirebase(); openDetail(bookId);
+  showToast('Invoice dihapus');
 }
 
 function handleInvoiceUpload(input,prevId,dataId,pfx){
@@ -2795,8 +2767,9 @@ function handleInvoiceUpload(input,prevId,dataId,pfx){
         area.appendChild(badge);
       }
       showToast('✓ PDF invoice terpasang','success');
-      // Upload PDF to Cloudinary raw endpoint
-      _uploadInvoiceToCloud(data,file.name,isPdf,d,null);
+      // Upload PDF to Cloudinary
+      const titleForPdf = document.getElementById(pfx+'Title')?.value || (editingId ? (books.find(x=>x.id===editingId)?.title||'book') : 'book');
+      _uploadInvoiceToCloud(data, `Payment Proof — ${titleForPdf}.pdf`, isPdf, d, null);
     } else {
       // Show image preview
       if(prevEl){prevEl.src=data;prevEl.classList.add('show');prevEl.style.display='';}
@@ -2805,12 +2778,11 @@ function handleInvoiceUpload(input,prevId,dataId,pfx){
         const old=area.querySelector('.inv-pdf-badge');if(old)old.remove();
       }
       showToast('✓ Invoice terpasang','success');
-      // Upload image to Cloudinary
+      // Upload image to Cloudinary with clean name
       const titleVal = document.getElementById(pfx+'Title')?.value || (editingId ? (books.find(x=>x.id===editingId)?.title||'book') : 'book');
-      const cloudName = `Payment Proof - ${titleVal}`;
-      const cloudPublicId = `payment-proof-${sanitizeFilename(titleVal)}`;
-      const autoName = cloudPublicId + ext;
-      _uploadInvoiceToCloud(data, autoName, isPdf, dStr, prevEl);
+      const ext = isPdf ? '.pdf' : '.jpg';
+      const dStr = new Date().toLocaleDateString('id-ID').replace(/\//g,'-');
+      _uploadInvoiceToCloud(data, `Payment Proof — ${titleVal}${ext}`, isPdf, dStr, prevEl);
     }
   };
   reader.readAsDataURL(file);
@@ -3394,10 +3366,10 @@ function saveGalleryUpload(){
   pendingGalleryFiles.forEach((f,i)=>{
     const now=new Date(date);
     const d=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
-    const suffix=pendingGalleryFiles.length>1?`_${i+1}`:'';
-    const filename=type==='cover'?`cover_${sanitizeFilename(title)}${suffix}`:
-                   type==='proof'?`bukti_${d}_${sanitizeFilename(title)}${suffix}`
-                   :`foto_${sanitizeFilename(title)}${suffix}`;
+    const suffix=pendingGalleryFiles.length>1?` (${i+1})`:'';
+    const filename=type==='cover'?`Cover — ${title}${suffix}`:
+                   type==='proof'?`Payment Proof — ${title}${suffix}`
+                   :`${title}${suffix}`;
     const entry={
       id:Date.now()+i,
       type,
